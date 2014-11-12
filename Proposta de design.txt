@@ -1,0 +1,83 @@
+// type: integer, character, boolean, floating_point, double_precision
+// If it's an array, preceeded by 'array of' or 'array2d of'
+// e.g. <integer> <array of character> <array2d of boolean>
+
+Global <type> var_name = value;
+Variable <type> var_name = value;
+
+Array <type> array_name of size 3 = { value, value, value };
+Array2d <type> array_name of size 3 by 2 = { {value, value}, {value, value}, {value, value} };
+var_name = array_name(n);
+array_name(n,m) = value;
+
+//Function declaration
+Load: function_name
+Input: <type> <reference>|<copy> var_name, ... 
+Output: <type> output_name
+{
+	// Code
+}
+//Function call
+Execute function function_name;
+Execute function function_name with value, value2, value3;
+
+//Control structures
+If EXPRESSION_IS_TRUE execute
+{
+	// Code
+}
+Else if EXPRESSION_IS_TRUE execute
+{
+	// Code
+}
+Else execute
+{
+	// Code
+}
+
+While EXPRESSION_IS_TRUE repeat
+{
+	// Code	
+}
+
+Do
+{
+	// Code
+}
+While EXPRESSION_IS_TRUE
+
+// skip
+For COUNTER from A to B do
+{
+	
+}
+
+Case var_name
+	equals value:
+	{}
+	equals value:
+	{}
+	equals value:
+	{}
+	case not:
+	{}
+
+Operadores tradicionais: () + / * 
+Operadores redefinidos: 
+	>= -> is greater than or equal to
+	<= -> is lesser than or equal to
+	== -> is equal to
+	> -> is greater than
+	< -> is lesser than
+	% -> modulo
+	&& -> and
+	|| -> or
+	! -> not
+
+[] reserved for piping
+
+	// Functions and stuff
+// Main:
+Starting up...
+	// Code
+End of file.
