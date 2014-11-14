@@ -3,6 +3,7 @@ LAG-Compiler-I
 
 Final project for Compilers @UFRJ/2014.2
 
+
 Compilation
 -----------
 
@@ -10,11 +11,12 @@ To do the compilation you need to install the bison++ with:
 
 ```sudo apt-get install bison++```
 
-After that you can compile this with:
+After that you can compile that with:
 
-```make```
+``make``
 
 The last command will compile the program and execute a test program.
+
 
 Running
 -------
@@ -29,9 +31,10 @@ with the follow command you will can do that:
 
 ```chmod +x trabalho```
 
+
 Development team
 ----------------
 
---Kaitsuru
---Luguix
---lucaspontes2
+*** Kaitsuru
+*** Luguix
+*** lucaspontes2
