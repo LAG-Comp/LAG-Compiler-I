@@ -3,7 +3,7 @@
 // e.g. <integer> <array of character> <array2d of boolean>
 
 Global <type> var_name = value;
-Variable <type> var_name = value;
+<type> var_name = value;
 
 Array <type> array_name of size 3 = { value, value, value };
 Array2d <type> array_name of size 3 by 2 = { {value, value}, {value, value}, {value, value} };
@@ -62,6 +62,9 @@ Case var_name
 	case not:
 	{}
 
+Print var_name;
+Print value;
+
 Operadores tradicionais: () + / * 
 Operadores redefinidos: 
 	>= -> is greater than or equal to
@@ -73,6 +76,8 @@ Operadores redefinidos:
 	&& -> and
 	|| -> or
 	! -> not
+	0 -> false
+	1 -> true
 
 [] reserved for piping
 

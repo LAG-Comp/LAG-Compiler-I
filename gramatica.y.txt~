@@ -1,15 +1,6 @@
 %{
 %%
 
-# declaration of variable:
-# type variable;
-# type variable, variable, ..., variable;
-# type variable = value;
-
-
-# conditional structure if/else:
-# 
-
 S : VAR ';' S
   | ATR ';' S 
   | IF S
@@ -28,10 +19,6 @@ FOR : _FOR '(' VAR ';' LE ';' S ')' S _ROF
 
 VAR : VAR ',' _ID
     | TIPO _ID
-    ;
-
-ID  : _ID
-    | _ID '=' VALUE
     ;
     
 TIPO : _INT

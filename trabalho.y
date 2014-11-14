@@ -47,7 +47,17 @@ void yyerror(const char *);
 %}
 
 %token _CTE_INT _CTE_CHAR _CTE_DOUBLE _CTE_STRING _ID 
-%token _INT _CHAR _BOOL _DOUBLE _FLOAT _STRING
+%token _INT _CHAR _BOOL _DOUBLE _FLOAT _STRING _CTE_TRUE _CTE_FALSE
+%token _GLOBAL _ARRAY _ARRAY2D
+$token _REFERENCE _COPY
+%token _LOAD _INPUT _OUTPUT
+%token _EXECUTE_FUNCTION _WITH
+%token _IF _EXECUTE_IF _ELSE _ELSE_IF
+%token _WHILE _REPEAT _DO
+%token _FOR _FROM _TO _DO_FOR
+%token _MODULO
+%token _IS _GREATER_THAN _LESSER_THAN _EQUAL_TO _OR _AND _NOT
+%token _STARTING_UP _END_OF_FILE
 
 %left '+' '-'
 %left '*' '/'
@@ -101,10 +111,10 @@ F : _ID
   }	
   | _CTE_INT 
   {  $$.v = $1.v; 
-     $$.t = Tipo( "int" ); }
+     $$.t = Tipo( "<integer>" ); }
   | _CTE_DOUBLE 
   {  $$.v = $1.v; 
-     $$.t = Tipo( "double" ); }
+     $$.t = Tipo( "<double_precision>" ); }
   | '(' E ')'  { $$ = $2; }
   ;
 
@@ -114,9 +124,9 @@ map<string,int> n_var_temp;
 map<string,Tipo> resultadoOperador;
 
 void inicializaResultadoOperador() {
-  resultadoOperador["int+int"] = Tipo( "int" );
-  resultadoOperador["int*int"] = Tipo( "int" );
-  resultadoOperador["double+int"] = Tipo( "double" );
+  resultadoOperador["<integer>+<integer>"] = Tipo( "<integer>" );
+  resultadoOperador["<integer>*<integer>"] = Tipo( "<integer>" );
+  resultadoOperador["<double_precision>+<integer>"] = Tipo( "<double_precision>" );
   // TODO: completar essa lista... :(
 }
 
