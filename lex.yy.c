@@ -929,157 +929,157 @@ YY_RULE_SETUP
 case 9:
 YY_RULE_SETUP
 #line 24 "trabalho.lex"
-{  yylval = Atributo( "", yytext ); return _GLOBAL; }
+{  yylval = Atributo( yytext ); return _GLOBAL; }
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
 #line 25 "trabalho.lex"
-{  yylval = Atributo( "", yytext ); return _ARRAY; }
+{  yylval = Atributo( yytext ); return _ARRAY; }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
 #line 26 "trabalho.lex"
-{  yylval = Atributo( "", yytext ); return _ARRAY2D; }
+{  yylval = Atributo( yytext ); return _ARRAY2D; }
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
 #line 29 "trabalho.lex"
-{  yylval = Atributo( "", yytext ); return _REFERENCE; }
+{  yylval = Atributo( yytext ); return _REFERENCE; }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
 #line 30 "trabalho.lex"
-{  yylval = Atributo( "", yytext ); return _COPY; }
+{  yylval = Atributo( yytext ); return _COPY; }
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
 #line 32 "trabalho.lex"
-{  yylval = Atributo( "", yytext ); return _LOAD; }
+{  yylval = Atributo( yytext ); return _LOAD; }
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
 #line 33 "trabalho.lex"
-{  yylval = Atributo( "", yytext ); return _INPUT; }
+{  yylval = Atributo( yytext ); return _INPUT; }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
 #line 34 "trabalho.lex"
-{  yylval = Atributo( "", yytext ); return _OUTPUT; }
+{  yylval = Atributo( yytext ); return _OUTPUT; }
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
 #line 36 "trabalho.lex"
-{  yylval = Atributo( "", yytext ); return _EXECUTE_FUNCTION; }
+{  yylval = Atributo( yytext ); return _EXECUTE_FUNCTION; }
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
 #line 37 "trabalho.lex"
-{  yylval = Atributo( "", yytext ); return _WITH; }
+{  yylval = Atributo( yytext ); return _WITH; }
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
 #line 40 "trabalho.lex"
-{  yylval = Atributo( "", yytext ); return _IF; }
+{  yylval = Atributo( yytext ); return _IF; }
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
 #line 41 "trabalho.lex"
-{  yylval = Atributo( "", yytext ); return _EXECUTE_IF; }
+{  yylval = Atributo( yytext ); return _EXECUTE_IF; }
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
 #line 42 "trabalho.lex"
-{  yylval = Atributo( "", yytext ); return _ELSE; }
+{  yylval = Atributo( yytext ); return _ELSE; }
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
 #line 43 "trabalho.lex"
-{  yylval = Atributo( "", yytext ); return _ELSE_IF; }
+{  yylval = Atributo( yytext ); return _ELSE_IF; }
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
 #line 45 "trabalho.lex"
-{  yylval = Atributo( "", yytext ); return _WHILE; }
+{  yylval = Atributo( yytext ); return _WHILE; }
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
 #line 46 "trabalho.lex"
-{  yylval = Atributo( "", yytext ); return _REPEAT; }
+{  yylval = Atributo( yytext ); return _REPEAT; }
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
 #line 47 "trabalho.lex"
-{  yylval = Atributo( "", yytext ); return _DO; }
+{  yylval = Atributo( yytext ); return _DO; }
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
 #line 49 "trabalho.lex"
-{  yylval = Atributo( "", yytext ); return _FOR; }
+{  yylval = Atributo( yytext ); return _FOR; }
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
 #line 50 "trabalho.lex"
-{  yylval = Atributo( "", yytext ); return _FROM; }
+{  yylval = Atributo( yytext ); return _FROM; }
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
 #line 51 "trabalho.lex"
-{  yylval = Atributo( "", yytext ); return _TO; }
+{  yylval = Atributo( yytext ); return _TO; }
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
 #line 52 "trabalho.lex"
-{  yylval = Atributo( "", yytext ); return _DO_FOR; }
+{  yylval = Atributo( yytext ); return _DO_FOR; }
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
 #line 55 "trabalho.lex"
-{  yylval = Atributo( "", yytext ); return _MODULO; }
+{  yylval = Atributo( yytext ); return _MODULO; }
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
 #line 57 "trabalho.lex"
-{  yylval = Atributo( "", yytext ); return _IS; }
+{  yylval = Atributo( yytext ); return _IS; }
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
 #line 58 "trabalho.lex"
-{  yylval = Atributo( "", yytext ); return _GREATER_THAN; }
+{  yylval = Atributo( yytext ); return _GREATER_THAN; }
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
 #line 59 "trabalho.lex"
-{  yylval = Atributo( "", yytext ); return _LESSER_THAN; }
+{  yylval = Atributo( yytext ); return _LESSER_THAN; }
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
 #line 60 "trabalho.lex"
-{  yylval = Atributo( "", yytext ); return _EQUAL_TO; }
+{  yylval = Atributo( yytext ); return _EQUAL_TO; }
 	YY_BREAK
 case 35:
 YY_RULE_SETUP
 #line 61 "trabalho.lex"
-{  yylval = Atributo( "", yytext ); return _OR; }
+{  yylval = Atributo( yytext ); return _OR; }
 	YY_BREAK
 case 36:
 YY_RULE_SETUP
 #line 62 "trabalho.lex"
-{  yylval = Atributo( "", yytext ); return _AND; }
+{  yylval = Atributo( yytext ); return _AND; }
 	YY_BREAK
 case 37:
 YY_RULE_SETUP
 #line 63 "trabalho.lex"
-{  yylval = Atributo( "", yytext ); return _NOT; }
+{  yylval = Atributo( yytext ); return _NOT; }
 	YY_BREAK
 case 38:
 YY_RULE_SETUP
 #line 66 "trabalho.lex"
-{  yylval = Atributo( "", yytext ); return _STARTING_UP; }
+{  yylval = Atributo( yytext ); return _STARTING_UP; }
 	YY_BREAK
 case 39:
 YY_RULE_SETUP
 #line 67 "trabalho.lex"
-{  yylval = Atributo( "", yytext ); return _END_OF_FILE; }
+{  yylval = Atributo( yytext ); return _END_OF_FILE; }
 	YY_BREAK
 case 40:
 YY_RULE_SETUP
