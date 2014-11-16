@@ -50,9 +50,14 @@ void yyerror(const char*);
 %token _FOR _FROM _TO _DO_FOR
 %token _PRINT
 %token _MOD
-%token _GT _LT _ET _GE _LE _OR _AND _NOT
+%token _GT _LT _ET _DF _GE _LE _OR _AND _NOT
 %token _STARTING_UP _END_OF_FILE
 
+%left _OR
+%left _AND
+%left _NOT
+%nonassoc _ET _DF _GT _GE _LT _LE
+%left _MOD
 %left '+' '-'
 %left '*' '/'
 
@@ -66,12 +71,12 @@ LIST_VAR : VAR ';' LIST_VAR 	{ $$.c = $1.c + $2.v + "\n" + $3.c; }
          | 						{ $$.c = ""; }
          ;
 
-VAR : VAR ',' _ID { $$.c = $1.c + $2.v + " " +  $3.v }
-    | TYPE _ID     { $$.c = $1.t.name + " " + $2.v }
-    | _GLOBAL TYPE _ID { $$.c = $1.v + " " + $2.t.name + " " + $3.v }
+VAR : VAR ',' _ID  		{ $$.c = $1.c + $2.v + " " +  $3.v; }
+    | TYPE _ID     		{ $$.c = $1.t.name + " " + $2.v; }
+    | _GLOBAL TYPE _ID 	{ $$.c = $1.v + " " + $2.t.name + " " + $3.v; }
     ;
 
-ATR : _ID '=' E { $$.c = $1.v + " " + $2.v + " " + $3.c }
+ATR : _ID '=' E { $$.c = $1.v + " " + $2.v + " " + $3.c; }
     ;
     
 TYPE : _INT
@@ -82,19 +87,29 @@ TYPE : _INT
      | _STRING
      ;
 
-E : E '+' E  { $$.c = $1.c + " " + $2.v + " " + $3.c }
-  | E '-' E  { $$.c = $1.c + " " + $2.v + " " + $3.c }
-  | E '*' E  { $$.c = $1.c + " " + $2.v + " " + $3.c }
-  | E '/' E  { $$.c = $1.c + " " + $2.v + " " + $3.c }
-  | F 		 { $$.c = $1.c }
+E : E '+' E  { $$.c = $1.c + " " + $2.v + " " + $3.c; }
+  | E '-' E  { $$.c = $1.c + " " + $2.v + " " + $3.c; }
+  | E '*' E  { $$.c = $1.c + " " + $2.v + " " + $3.c; }
+  | E '/' E  { $$.c = $1.c + " " + $2.v + " " + $3.c; }
+  | E _MOD E { $$.c = $1.c + " " + $2.v + " " + $3.c; }
+  | E _AND E { $$.c = $1.c + " " + $2.v + " " + $3.c; }
+  | E _OR E  { $$.c = $1.c + " " + $2.v + " " + $3.c; }
+  | E _ET E  { $$.c = $1.c + " " + $2.v + " " + $3.c; }
+  | E _DF E  { $$.c = $1.c + " " + $2.v + " " + $3.c; }
+  | E _GT E  { $$.c = $1.c + " " + $2.v + " " + $3.c; }
+  | E _GE E  { $$.c = $1.c + " " + $2.v + " " + $3.c; }
+  | E _LT E  { $$.c = $1.c + " " + $2.v + " " + $3.c; }
+  | E _LE E  { $$.c = $1.c + " " + $2.v + " " + $3.c; }
+  | '(' E ')'{ $$.c = $1.v + " " + $2.c + " " + $3.v; }
+  | _NOT E 	 { $$.c = $1.v + " " + $2.c; }
+  | F 		 { $$.c = $1.v; }
   ;
 
-F : _ID 		{ $$.c = $1.v }
-  | _CTE_INT	{ $$.c = $1.v }
-  | _CTE_DOUBLE { $$.c = $1.v }
-  | _CTE_TRUE	{ $$.c = $1.v }
-  | _CTE_FALSE	{ $$.c = $1.v }
-  | '(' E ')' 	{ $$.c = $1.v + " " + $2.c + " " + $3.v }
+F : _ID
+  | _CTE_INT
+  | _CTE_DOUBLE
+  | _CTE_TRUE
+  | _CTE_FALSE
   ;
 
 %%

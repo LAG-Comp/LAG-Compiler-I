@@ -1,16 +1,16 @@
 DELIM   [\t ]
-LINHA   [\n]
-NUMERO  [0-9]
-LETRA   [A-Za-z_]
-INT     {NUMERO}+
-DOUBLE  {NUMERO}+("."{NUMERO}+)
-ID      {LETRA}({LETRA}|{NUMERO})*
+LINE    [\n]
+NUMBER  [0-9]
+LETTER  [A-Za-z_]
+INT     {NUMBER}+
+DOUBLE  {NUMBER}+("."{NUMBER}+)
+ID      {LETTER}({LETTER}|{NUMBER})*
 STRING  \"[^"\n]*\"
 
 
 %%
 
-{LINHA}    { nline++; }
+{LINE}    { nline++; }
 {DELIM}    {}
 
 "<integer>"             {  yylval = Attribute( "", yytext ); return _INT; }
@@ -60,8 +60,9 @@ STRING  \"[^"\n]*\"
 "is greater than"          {  yylval = Attribute( yytext ); return _GT; }
 "is lesser than"           {  yylval = Attribute( yytext ); return _LT; }
 "is equal to"              {  yylval = Attribute( yytext ); return _ET; }
-"is greater than equal to" {  yylval = Attribute( yytext ); return _GE; }
-"is lesser than equal to"  {  yylval = Attribute( yytext ); return _LE; }
+"is different from"        {  yylval = Attribute( yytext ); return _DF; }
+"is greater than or equal to" {  yylval = Attribute( yytext ); return _GE; }
+"is lesser than or equal to"  {  yylval = Attribute( yytext ); return _LE; }
 "or"                    {  yylval = Attribute( yytext ); return _OR; }
 "and"                   {  yylval = Attribute( yytext ); return _AND; }
 "not"                   {  yylval = Attribute( yytext ); return _NOT; }
