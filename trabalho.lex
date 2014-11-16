@@ -10,75 +10,75 @@ STRING  \"[^"\n]*\"
 
 %%
 
-{LINHA}    { nlinha++; }
+{LINHA}    { nline++; }
 {DELIM}    {}
 
-"<integer>"             {  yylval = Atributo( "", yytext ); return _INT; }
-"<character>"           {  yylval = Atributo( "", yytext ); return _CHAR; }
-"<boolean>"             {  yylval = Atributo( "", yytext ); return _BOOL; }
-"<double_precision>"    {  yylval = Atributo( "", yytext ); return _DOUBLE; }
-"<floating_point>"      {  yylval = Atributo( "", yytext ); return _FLOAT; }
-"<string>"              {  yylval = Atributo( "", yytext ); return _STRING; }
+"<integer>"             {  yylval = Attribute( "", yytext ); return _INT; }
+"<character>"           {  yylval = Attribute( "", yytext ); return _CHAR; }
+"<boolean>"             {  yylval = Attribute( "", yytext ); return _BOOL; }
+"<double_precision>"    {  yylval = Attribute( "", yytext ); return _DOUBLE; }
+"<floating_point>"      {  yylval = Attribute( "", yytext ); return _FLOAT; }
+"<string>"              {  yylval = Attribute( "", yytext ); return _STRING; }
 
 
-"Global"                {  yylval = Atributo( yytext ); return _GLOBAL; }
-"Array"                 {  yylval = Atributo( yytext ); return _ARRAY; }
-"Array2d"               {  yylval = Atributo( yytext ); return _ARRAY2D; }
+"Global"                {  yylval = Attribute( yytext ); return _GLOBAL; }
+"Array"                 {  yylval = Attribute( yytext ); return _ARRAY; }
+"Array2d"               {  yylval = Attribute( yytext ); return _ARRAY2D; }
 
 
-"<reference>"           {  yylval = Atributo( yytext ); return _REFERENCE; }
-"<copy>"                {  yylval = Atributo( yytext ); return _COPY; }
+"<reference>"           {  yylval = Attribute( yytext ); return _REFERENCE; }
+"<copy>"                {  yylval = Attribute( yytext ); return _COPY; }
 
-"Load:"                 {  yylval = Atributo( yytext ); return _LOAD; }
-"Input"                 {  yylval = Atributo( yytext ); return _INPUT; }
-"Output:"               {  yylval = Atributo( yytext ); return _OUTPUT; }
+"Load:"                 {  yylval = Attribute( yytext ); return _LOAD; }
+"Input"                 {  yylval = Attribute( yytext ); return _INPUT; }
+"Output:"               {  yylval = Attribute( yytext ); return _OUTPUT; }
 
-"Execute function"      {  yylval = Atributo( yytext ); return _EXECUTE_FUNCTION; }
-"with"                  {  yylval = Atributo( yytext ); return _WITH; }
-
-
-"If"                    {  yylval = Atributo( yytext ); return _IF; }
-"execute"               {  yylval = Atributo( yytext ); return _EXECUTE_IF; }
-"Else"                  {  yylval = Atributo( yytext ); return _ELSE; }
-"Else if"               {  yylval = Atributo( yytext ); return _ELSE_IF; }
-
-"While"                 {  yylval = Atributo( yytext ); return _WHILE; }
-"repeat"                {  yylval = Atributo( yytext ); return _REPEAT; }
-"Do"                    {  yylval = Atributo( yytext ); return _DO; }
-
-"For"                   {  yylval = Atributo( yytext ); return _FOR; }
-"from"                  {  yylval = Atributo( yytext ); return _FROM; }
-"to"                    {  yylval = Atributo( yytext ); return _TO; }
-"do"                    {  yylval = Atributo( yytext ); return _DO_FOR; }
+"Execute function"      {  yylval = Attribute( yytext ); return _EXECUTE_FUNCTION; }
+"with"                  {  yylval = Attribute( yytext ); return _WITH; }
 
 
-"modulo"                {  yylval = Atributo( yytext ); return _MODULO; }
+"If"                    {  yylval = Attribute( yytext ); return _IF; }
+"execute"               {  yylval = Attribute( yytext ); return _EXECUTE_IF; }
+"Else"                  {  yylval = Attribute( yytext ); return _ELSE; }
+"Else if"               {  yylval = Attribute( yytext ); return _ELSE_IF; }
 
-"is"                    {  yylval = Atributo( yytext ); return _IS; }
-"greater than"          {  yylval = Atributo( yytext ); return _GREATER_THAN; }
-"lesser than"           {  yylval = Atributo( yytext ); return _LESSER_THAN; }
-"equal to"              {  yylval = Atributo( yytext ); return _EQUAL_TO; }
-"or"                    {  yylval = Atributo( yytext ); return _OR; }
-"and"                   {  yylval = Atributo( yytext ); return _AND; }
-"not"                   {  yylval = Atributo( yytext ); return _NOT; }
+"While"                 {  yylval = Attribute( yytext ); return _WHILE; }
+"repeat"                {  yylval = Attribute( yytext ); return _REPEAT; }
+"Do"                    {  yylval = Attribute( yytext ); return _DO; }
+
+"For"                   {  yylval = Attribute( yytext ); return _FOR; }
+"from"                  {  yylval = Attribute( yytext ); return _FROM; }
+"to"                    {  yylval = Attribute( yytext ); return _TO; }
+"do"                    {  yylval = Attribute( yytext ); return _DO_FOR; }
 
 
-"Starting up..."        {  yylval = Atributo( yytext ); return _STARTING_UP; }
-"End of file"           {  yylval = Atributo( yytext ); return _END_OF_FILE; }
+"Print"                 {  yylval = Attribute( yytext ); return _PRINT; }
 
 
-"true"     { yylval = Atributo( yytext ); return _CTE_TRUE; }
-"false"    { yylval = Atributo( yytext ); return _CTE_FALSE; }
+"modulo"                {  yylval = Attribute( yytext ); return _MOD; }
 
-{ID}       { yylval = Atributo( yytext ); return _ID; }
-{INT}      { yylval = Atributo( yytext ); return _CTE_INT; }
-{DOUBLE}   { yylval = Atributo( yytext ); return _CTE_DOUBLE; }
-{STRING}   { yylval = Atributo( yytext ); return _CTE_STRING; }
+"is greater than"          {  yylval = Attribute( yytext ); return _GT; }
+"is lesser than"           {  yylval = Attribute( yytext ); return _LT; }
+"is equal to"              {  yylval = Attribute( yytext ); return _ET; }
+"is greater than equal to" {  yylval = Attribute( yytext ); return _GE; }
+"is lesser than equal to"  {  yylval = Attribute( yytext ); return _LE; }
+"or"                    {  yylval = Attribute( yytext ); return _OR; }
+"and"                   {  yylval = Attribute( yytext ); return _AND; }
+"not"                   {  yylval = Attribute( yytext ); return _NOT; }
 
-.          { yylval = Atributo( yytext ); return *yytext; }
+
+"Starting up..."        {  yylval = Attribute( yytext ); return _STARTING_UP; }
+"End of file"           {  yylval = Attribute( yytext ); return _END_OF_FILE; }
+
+
+"true"     { yylval = Attribute( yytext ); return _CTE_TRUE; }
+"false"    { yylval = Attribute( yytext ); return _CTE_FALSE; }
+
+{ID}       { yylval = Attribute( yytext ); return _ID; }
+{INT}      { yylval = Attribute( yytext ); return _CTE_INT; }
+{DOUBLE}   { yylval = Attribute( yytext ); return _CTE_DOUBLE; }
+{STRING}   { yylval = Attribute( yytext ); return _CTE_STRING; }
+
+.          { yylval = Attribute( yytext ); return *yytext; }
 
 %%
-
- 
-
-
