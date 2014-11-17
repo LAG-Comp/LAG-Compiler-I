@@ -163,10 +163,10 @@ E : E '+' E  { $$.c = $1.c + " " + $2.v + " " + $3.c; }
   | E _LE E  { $$.c = $1.c + " " + $2.v + " " + $3.c; }
   | '(' E ')'{ $$.c = $1.v + " " + $2.c + " " + $3.v; }
   | _NOT E 	 { $$.c = $1.v + " " + $2.c; }
-  | _ID '(' E ')' 		
-  { $$.c = $1.v + $2.v + " " + $3.c + " " + $4.v; }	// return one element of the array 
-  | _ID '(' E ',' E ')'	
-  { $$.c = $1.v + $2.v + " " + $3.c + $4.v + " " + $5.c + " " + $6.v; }// return one element of the matrix
+  | _ID '(' E ')' 		// return one element of the array 
+  { $$.c = $1.v + $2.v + " " + $3.c + " " + $4.v; }
+  | _ID '(' E ',' E ')'		// return one element of the matrix
+  { $$.c = $1.v + $2.v + " " + $3.c + $4.v + " " + $5.c + " " + $6.v; }
   | CALL_FUNCTION
   | F 		 { $$.c = $1.v; }
   ;
