@@ -23,7 +23,10 @@ STRING  \"[^"\n]*\"
 
 "Global"                {  yylval = Attribute( yytext ); return _GLOBAL; }
 "Array"                 {  yylval = Attribute( yytext ); return _ARRAY; }
-"Array2d"               {  yylval = Attribute( yytext ); return _ARRAY2D; }
+"Matrix"                {  yylval = Attribute( yytext ); return _MATRIX; }
+
+"of size" 				{ yylval = Attribute( yytext ); return _OF_SIZE;}
+"by"	 				{ yylval = Attribute( yytext ); return _BY;}
 
 
 "<reference>"           {  yylval = Attribute( yytext ); return _REFERENCE; }

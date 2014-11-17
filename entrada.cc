@@ -1,11 +1,14 @@
-<integer> a, b;
+Global <integer> a, b;
 b = 10 modulo (5 + 2 * 3 );
 a = (a + b) * (1 + 10 * a);
 
-<boolean> c;
+Global <boolean> c;
 c = true;
 c = true and false;
 c = true or false;
+
+Global Array <integer> of size 3 arr;
+Global Matrix <integer> of size 4 by 5 mat;
 
 c = b is greater than a;
 c = b is greater than or equal to a;
@@ -19,6 +22,9 @@ Output: <integer> ret
 
 	d = a is lesser than b;
 	d = a is lesser than or equal to b;
+
+	Array <integer> of size 3 arrl;
+    Matrix <integer> of size 4 by 5 matl;
 
 	<integer> f;
 	f = Execute function one_function();

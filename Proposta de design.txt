@@ -5,8 +5,8 @@
 Global <type> var_name = value;
 <type> var_name = value;
 
-Array <type> array_name of size 3 = { value, value, value };
-Array2d <type> array_name of size 3 by 2 = { {value, value}, {value, value}, {value, value} };
+Array <type> of size 3 array_name = { value, value, value };
+Matrix <type> of size 3 by 2 array_name = { {value, value}, {value, value}, {value, value} };
 var_name = array_name(n);
 array_name(n,m) = value;
 

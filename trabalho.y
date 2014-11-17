@@ -41,7 +41,8 @@ void yyerror(const char*);
 
 %token _CTE_INT _CTE_CHAR _CTE_DOUBLE _CTE_STRING _ID _CTE_TRUE _CTE_FALSE
 %token _INT _CHAR _BOOL _DOUBLE _FLOAT _STRING
-%token _GLOBAL _ARRAY _ARRAY2D
+%token _GLOBAL _ARRAY _MATRIX
+%token _OF_SIZE _BY
 %token _REFERENCE _COPY
 %token _LOAD _INPUT _OUTPUT
 %token _EXECUTE_FUNCTION _WITH
@@ -53,7 +54,6 @@ void yyerror(const char*);
 %token _GT _LT _ET _DF _GE _LE _OR _AND _NOT
 %token _STARTING_UP _END_OF_FILE
 
-%left '='
 %left _OR
 %left _AND
 %left _NOT
@@ -102,14 +102,18 @@ CALL_FUNCTION : _EXECUTE_FUNCTION _ID _WITH '(' PARAMETERS ')'
               | _EXECUTE_FUNCTION _ID '(' ')' { $$.c = $1.v + " " + $2.v + $3.v + $4.v; }
               ;
 
+LIST_ARRAY : '{' PARAMETERS '}' ',' LIST_ARRAY { $$ = $1.v + " " + $2.c + " " + $3.v + $4.v + $5.c; }
+   		   | '{' PARAMETERS '}' { $$ = $1.v + " " + $2.c + " " + $3.v; }
+   		   ;
+
 PARAMETERS : PARAMETER ',' PARAMETERS { $$.c = $1.c + $2.v + $3.c; }
            | PARAMETER
            ;
 
 PARAMETER : E
           ;
-          
-LIST_VAR : VAR ';' LIST_VAR 	{ $$.c = $1.c + $2.v + "\n" + $3.c; }
+
+LIST_VAR : _GLOBAL VAR ';' LIST_VAR 	{ $$.c = $1.v + " " + $2.c + $3.v + "\n" + $4.c; }
          | ATR ';' LIST_VAR 	{ $$.c = $1.c + $2.v + "\n" + $3.c; }
          | 						{ $$.c = ""; }
          ;
@@ -117,9 +121,23 @@ LIST_VAR : VAR ';' LIST_VAR 	{ $$.c = $1.c + $2.v + "\n" + $3.c; }
 VAR : VAR ',' _ID  		{ $$.c = $1.c + $2.v + " " +  $3.v; }
     | TYPE _ID     		{ $$.c = $1.t.name + " " + $2.v; }
     | _GLOBAL TYPE _ID 	{ $$.c = $1.v + " " + $2.t.name + " " + $3.v; }
+    | _ARRAY TYPE _OF_SIZE _CTE_INT _ID
+    { $$.c = $1.v + " " + $2.t.name + " " + $3.v + " " + $4.v + " " + $5.v; }
+    | _GLOBAL _ARRAY TYPE _OF_SIZE _CTE_INT _ID
+    { $$.c = $1.v + " " + $2.v + " " + $3.t.name + " " + $4.v + " " + $5.v + " " + $6.v; }
+    | _MATRIX TYPE _OF_SIZE _CTE_INT _BY _CTE_INT _ID
+    { $$.c = $1.v + " " + $2.t.name + " " + $3.v + " " + $4.v + " " + $5.v + " " + $6.v; }
+    | _GLOBAL _MATRIX TYPE _OF_SIZE _CTE_INT _BY _CTE_INT _ID
+    { $$.c = $1.v + " " + $2.v + " " + $3.t.name + " " + $4.v + " " + $5.v + " " + $6.v + " " + $7.v; }
     ;
 
 ATR : _ID '=' E { $$.c = $1.v + " " + $2.v + " " + $3.c; }
+    | _ID '=' '{' PARAMETERS '}' { $$.c = $1.v + " " + $2.v + $3.v + " " + $4.c + " " + $5.v; }
+    | _ID '=' '{' LIST_ARRAY '}' { $$.c = $1.v + " " + $2.v + $3.v + " " + $4.c + " " + $5.v; }
+    | _ID '(' E ')' '=' E 		 
+    { $$.c = $1.v + $2.v + " " + $3.c + " " + $4.v + " " + $5.v + " " + $6.c; }
+    | _ID '(' E ',' E ')' '=' E
+    { $$.c = $1.v + $2.v + " " + $3.c + $4.v + " " + $5.c + " " + $6.v + " " + $7.v + " " + $8.c; }
     ;
     
 TYPE : _INT
@@ -145,6 +163,10 @@ E : E '+' E  { $$.c = $1.c + " " + $2.v + " " + $3.c; }
   | E _LE E  { $$.c = $1.c + " " + $2.v + " " + $3.c; }
   | '(' E ')'{ $$.c = $1.v + " " + $2.c + " " + $3.v; }
   | _NOT E 	 { $$.c = $1.v + " " + $2.c; }
+  | _ID '(' E ')' 		
+  { $$.c = $1.v + $2.v + " " + $3.c + " " + $4.v; }	// return one element of the array 
+  | _ID '(' E ',' E ')'	
+  { $$.c = $1.v + $2.v + " " + $3.c + $4.v + " " + $5.c + " " + $6.v; }// return one element of the matrix
   | CALL_FUNCTION
   | F 		 { $$.c = $1.v; }
   ;
@@ -154,6 +176,7 @@ F : _ID
   | _CTE_DOUBLE
   | _CTE_TRUE
   | _CTE_FALSE
+  | _CTE_STRING
   ;
 
 %%
