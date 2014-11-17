@@ -54,7 +54,9 @@ void yyerror(const char*);
 %token _PRINT
 %token _MOD
 %token _GT _LT _ET _DF _GE _LE _OR _AND _NOT
-%token _STARTING_UP _END_OF_FILE
+%token _STARTING_UP _END_OF_FILE 
+%token _CRESCENT _DECRESCENT
+%token _CRITERION _MERGE _SPLIT
 
 %left _OR
 %left _AND
@@ -107,6 +109,7 @@ COMMAND : CALL_FUNCTION ';' { $$.c = $1.c + $2.v; }
         | CMD_DOWHILE ';'	{ $$.c = $1.c + $2.v; }
         | CMD_FOR
         | CMD_SWITCH
+        | PIPE_FOR_EACH ';' { $$.c = $1.c + $2.v; }
         ;
         
 
@@ -188,21 +191,39 @@ ATR : _ID '=' E { $$.c = $1.v + " " + $2.v + " " + $3.c; }
     ;
 
 PIPE : '[' PIPE_LIST ']' { $$.c = $1.v + " " + $2.c + " " + $3.v; }
+     | '[' _ID '|' PIPE_LIST ']' { $$.c = $1.v + " " + $2.v + " " + $3.v + " " + $3.c + " " + $4.v; }
      ;
+
 
 PIPE_LIST : PIPE_CMD '|' PIPE_LIST { $$.c = $1.c + " " + $2.v + " " + $3.c; }
           | PIPE_CMD 
           ;
 
+PIPE_FOR_EACH : '[' LIST_PIPE_FOR_EACH ']' { $$.c = $1.v + " " + $2.c + " " + $3.v; }
+      		  | '[' _ID '|' LIST_PIPE_FOR_EACH ']' { $$.c = $1.v + " " + $2.v + " " + $3.v + " " + $3.c + " " + $4.v; }
+      		  ;
+
+LIST_PIPE_FOR_EACH : PIPE_CMD '|' LIST_PIPE_FOR_EACH { $$.c = $1.c + " " + $2.v + " " + $3.c; }
+           | _FOR_EACH_X FOR_EACH_CMD { $$.c = $1.v + " " + $2.c; }
+           ;
+
+FOR_EACH_CMD : CALL_FUNCTION
+			 | PRINT
+			 ;
+
 PIPE_CMD : _INTERVAL_FROM _CTE_INT _TO _CTE_INT { $$.c = $1.v + " " + $2.v + " " + $3.v + " " + $4.v; }
          | _FILTER_X E 							{ $$.c = $1.v + " " + $2.c; }
          | _FIRST_N _CTE_INT 					{ $$.c = $1.v + " " + $2.v; }
          | _LAST_N _CTE_INT 					{ $$.c = $1.v + " " + $2.v; }
-         | _SORT 								{ $$.c = $1.v; }
-         | _FOR_EACH_X CALL_FUNCTION			{ $$.c = $1.v + " " + $2.c; }
+         | _SORT '(' SORT_PARAM ')' 			{ $$.c = $1.v + $2.v + " " + $3.c + " " + $4.v; }
+         | _SPLIT _ID _TO _ID _CRITERION E      { $$.c = $1.v + $2.v + " " + $3.v + " " + $4.v + " " + $5.v + " " + $6.c; }
+         | _MERGE _ID _WITH _ID _CRITERION E 	{ $$.c = $1.v + $2.v + " " + $3.v + " " + $4.v + " " + $5.v + " " + $6.c; }
          ;
 
-    
+SORT_PARAM : _CRESCENT
+	       | _DECRESCENT 
+	       ;
+
 TYPE : _INT
      | _CHAR
      | _BOOL

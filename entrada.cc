@@ -35,7 +35,7 @@ Output: <integer> ret
 
 	<boolean> e;
 
-	e = [ for each x Execute function inexistent_function with (a,b,c,x) ];
+	[ for each x Execute function inexistent_function with (a,b,c,x) ];
 
 	e = not ( b is different from a );
 	e = Execute function one_function();
@@ -49,7 +49,6 @@ Output: <integer> ret
 	{
 		<integer> ab;
 		Print ab;
-		Print "hello!\n";
 	}
 
 	For pudim from 1 to 4 execute

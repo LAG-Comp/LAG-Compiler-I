@@ -3,6 +3,9 @@ Onde exatamente precisa ter blocos?
 O que define um switch?
 Arrays dinamicos ou estáticos? Ambos?
 
+Merge? Como funciona, de onde vem, o que codme?
+
+
 como definir uma função sem parametros?
 
 Load: uhuuu

@@ -95,3 +95,43 @@ Operadores redefinidos:
 Starting up...
 	// Code
 End of file.
+
+# Comment #
+
+18) split[ x > 6 ]( a, b )
+
+Split a to b using criterion ( E(x) );
+
+a = { 0, 1, 2, 3, 4, 5 };
+b = {};
+
+Split a to b using criterion ( x > 2 );
+
+a = { 0, 1, 2 };
+b = { 3, 4, 5 };
+
+Split a to b using criterion ( true );
+
+a = { };
+b = { 0, 1, 2 };
+
+19) merge( a, b )[ x == y ]
+
+a = {  1, 2, 3, 4, 5 };
+b = {  1, 3, 5, 7, 9 };
+
+c = merge( a, b )[ x == y ]
+
+Merge a with b to c using criterion ( E(x,y) );
+c = { 1, 3, 5 }
+
+
+PIPE
+a = { 1,3,2 };
+
+b = [ a | sort ]
+
+... | split a to b using criterion E(x) ] 
+[ merge a with b using criterion E(x,y) | ...
+
+\{ \$\$[^\{\}]*\}

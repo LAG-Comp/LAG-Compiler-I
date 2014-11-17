@@ -5,7 +5,7 @@ LETTER  [A-Za-z_]
 INT     {NUMBER}+
 DOUBLE  {NUMBER}+("."{NUMBER}+)
 ID      {LETTER}({LETTER}|{NUMBER})*
-STRING  \"[^\"\n]*\"
+STRING  \"[^"\n]*\"
 COMMENT  #[^#]*#
 
 
@@ -83,6 +83,13 @@ COMMENT  #[^#]*#
 "last"    				{ yylval = Attribute( yytext ); return _LAST_N; }
 "sort"    				{ yylval = Attribute( yytext ); return _SORT; }
 "for each x"    		{ yylval = Attribute( yytext ); return _FOR_EACH_X; }
+
+"using criterion"    		{ yylval = Attribute( yytext ); return _CRITERION; }
+"merge"    					{ yylval = Attribute( yytext ); return _MERGE; }
+"split"    					{ yylval = Attribute( yytext ); return _SPLIT; }
+
+"increasing"    		{ yylval = Attribute( yytext ); return _CRESCENT; }
+"decreasing"    		{ yylval = Attribute( yytext ); return _DECRESCENT; }
 
 
 "Starting up..."        {  yylval = Attribute( yytext ); return _STARTING_UP; }
