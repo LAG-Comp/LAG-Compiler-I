@@ -252,7 +252,7 @@ int nline = 1;
 void yyerror( const char* st )
 {
    puts( st ); 
-   printf(  "Line: %d\nNear of: '%s'\n", nline, yytext );
+   printf(  "Line: %d\nNear: '%s'\n", nline, yytext );
 }
 
 int main(int argc, char **argv){

@@ -13,6 +13,7 @@ Global Matrix <integer> of size 4 by 5 mat;
 c = b is greater than a;
 c = b is greater than or equals a;
 
+# Comentário altamente util #
 
 Load: my_function
 Input: <integer> <copy> bca, <boolean> <reference> gbo
@@ -79,4 +80,4 @@ Output: <void>
 Starting up...
 	<integer> gh;
 	gh = Execute function my_function();
-End of file
+End of file 

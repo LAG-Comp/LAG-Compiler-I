@@ -5,13 +5,15 @@ LETTER  [A-Za-z_]
 INT     {NUMBER}+
 DOUBLE  {NUMBER}+("."{NUMBER}+)
 ID      {LETTER}({LETTER}|{NUMBER})*
-STRING  \"[^"\n]*\"
+STRING  \"[^\"\n]*\"
+COMMENT  #[^#]*#
 
 
 %%
 
-{LINE}    { nline++; }
-{DELIM}    {}
+{LINE}    	{ nline++; }
+{DELIM}    	{}
+{COMMENT}   {}
 
 "<integer>"             {  yylval = Attribute( "", yytext ); return _INT; }
 "<character>"           {  yylval = Attribute( "", yytext ); return _CHAR; }
