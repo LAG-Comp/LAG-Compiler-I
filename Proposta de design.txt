@@ -17,6 +17,15 @@ Output: <type> output_name
 {
 	// Code
 }
+
+//Function declaration
+Load: function_name
+Input: <void>
+Output: <void>
+{
+	// Code
+}
+
 //Function call
 Execute function function_name();
 Execute function function_name with( value, value2, value3 );

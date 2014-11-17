@@ -19,6 +19,7 @@ STRING  \"[^"\n]*\"
 "<double_precision>"    {  yylval = Attribute( "", yytext ); return _DOUBLE; }
 "<floating_point>"      {  yylval = Attribute( "", yytext ); return _FLOAT; }
 "<string>"              {  yylval = Attribute( "", yytext ); return _STRING; }
+"<void>"                {  yylval = Attribute( "", yytext ); return _VOID; }
 
 
 "Global"                {  yylval = Attribute( yytext ); return _GLOBAL; }
@@ -88,11 +89,11 @@ STRING  \"[^"\n]*\"
 "true"     { yylval = Attribute( yytext ); return _CTE_TRUE; }
 "false"    { yylval = Attribute( yytext ); return _CTE_FALSE; }
 
-{ID}       { yylval = Attribute( yytext ); return _ID; }
 {INT}      { yylval = Attribute( yytext ); return _CTE_INT; }
 {DOUBLE}   { yylval = Attribute( yytext ); return _CTE_DOUBLE; }
 {STRING}   { yylval = Attribute( yytext ); return _CTE_STRING; }
 
+{ID}       { yylval = Attribute( yytext ); return _ID; }
 .          { yylval = Attribute( yytext ); return *yytext; }
 
 %%

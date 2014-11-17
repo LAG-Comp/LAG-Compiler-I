@@ -67,6 +67,13 @@ Output: <integer> ret
 	a = [ interval from 0 to 100 ];
 }
 
+Load: ostra
+Input: <void>
+Output: <void>
+{
+	Print "work!";
+}
+
 Starting up...
 	<integer> gh;
 	gh = Execute function my_function();
