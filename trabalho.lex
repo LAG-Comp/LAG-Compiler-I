@@ -65,21 +65,22 @@ STRING  \"[^"\n]*\"
 
 "modulo"                {  yylval = Attribute( yytext ); return _MOD; }
 
-"is greater than"          {  yylval = Attribute( yytext ); return _GT; }
-"is lesser than"           {  yylval = Attribute( yytext ); return _LT; }
-"is equal to"              {  yylval = Attribute( yytext ); return _ET; }
-"is different from"        {  yylval = Attribute( yytext ); return _DF; }
-"is greater than or equal to" {  yylval = Attribute( yytext ); return _GE; }
-"is lesser than or equal to"  {  yylval = Attribute( yytext ); return _LE; }
-"or"                    {  yylval = Attribute( yytext ); return _OR; }
-"and"                   {  yylval = Attribute( yytext ); return _AND; }
-"not"                   {  yylval = Attribute( yytext ); return _NOT; }
+"is greater than"          	{  yylval = Attribute( yytext ); return _GT; }
+"is lesser than"           	{  yylval = Attribute( yytext ); return _LT; }
+"is equal to"              	{  yylval = Attribute( yytext ); return _ET; }
+"is different from"        	{  yylval = Attribute( yytext ); return _DF; }
+"is greater than or equals"	{  yylval = Attribute( yytext ); return _GE; }
+"is lesser than or equals" 	{  yylval = Attribute( yytext ); return _LE; }
+"or"                       	{  yylval = Attribute( yytext ); return _OR; }
+"and"                      	{  yylval = Attribute( yytext ); return _AND; }
+"not"                  	   	{  yylval = Attribute( yytext ); return _NOT; }
 
 "interval from"    		{ yylval = Attribute( yytext ); return _INTERVAL_FROM; }
 "filter x"    			{ yylval = Attribute( yytext ); return _FILTER_X; }
 "first"    				{ yylval = Attribute( yytext ); return _FIRST_N; }
 "last"    				{ yylval = Attribute( yytext ); return _LAST_N; }
 "sort"    				{ yylval = Attribute( yytext ); return _SORT; }
+"for each x"    		{ yylval = Attribute( yytext ); return _FOR_EACH_X; }
 
 
 "Starting up..."        {  yylval = Attribute( yytext ); return _STARTING_UP; }

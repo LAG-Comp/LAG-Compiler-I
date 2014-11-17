@@ -50,7 +50,7 @@ void yyerror(const char*);
 %token _WHILE _REPEAT _DO
 %token _FOR _FROM _TO _DO_FOR
 %token _CASE _CASE_EQUALS _CASE_NOT
-%token _INTERVAL_FROM _FILTER_X _FIRST_N _LAST_N _SORT
+%token _INTERVAL_FROM _FILTER_X _FIRST_N _LAST_N _SORT _FOR_EACH_X
 %token _PRINT
 %token _MOD
 %token _GT _LT _ET _DF _GE _LE _OR _AND _NOT
@@ -199,6 +199,7 @@ PIPE_CMD : _INTERVAL_FROM _CTE_INT _TO _CTE_INT { $$.c = $1.v + " " + $2.v + " "
          | _FIRST_N _CTE_INT 					{ $$.c = $1.v + " " + $2.v; }
          | _LAST_N _CTE_INT 					{ $$.c = $1.v + " " + $2.v; }
          | _SORT 								{ $$.c = $1.v; }
+         | _FOR_EACH_X CALL_FUNCTION			{ $$.c = $1.v + " " + $2.c; }
          ;
 
     

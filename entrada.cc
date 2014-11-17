@@ -11,7 +11,7 @@ Global Array <integer> of size 3 arr;
 Global Matrix <integer> of size 4 by 5 mat;
 
 c = b is greater than a;
-c = b is greater than or equal to a;
+c = b is greater than or equals a;
 
 
 Load: my_function
@@ -21,7 +21,7 @@ Output: <integer> ret
 	<boolean> d;
 
 	d = a is lesser than b;
-	d = a is lesser than or equal to b;
+	d = a is lesser than or equals b;
 
 	Array <integer> of size 3 arrl;
     Matrix <integer> of size 4 by 5 matl;
@@ -34,15 +34,17 @@ Output: <integer> ret
 
 	<boolean> e;
 
+	e = [ for each x Execute function inexistent_function with (a,b,c,x) ];
+
 	e = not ( b is different from a );
 	e = Execute function one_function();
 
-	If b is lesser than or equal to a execute
+	If b is lesser than or equals a execute
 	{
 		dfg = Execute function uhuuu();
 	}
 
-	While a is lesser than or equal to b repeat
+	While a is lesser than or equals b repeat
 	{
 		<integer> ab;
 		Print ab;
