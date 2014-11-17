@@ -54,4 +54,13 @@ Output: <integer> ret
 		Print pudim;
 	}
 
+	Case teo
+		equals 6:
+		{
+			Print "coisas 1";
+		}
+		case not:
+		{
+			Print "coisas default";
+		}
 }

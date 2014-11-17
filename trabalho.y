@@ -49,6 +49,7 @@ void yyerror(const char*);
 %token _IF _EXECUTE _ELSE _ELSE_IF
 %token _WHILE _REPEAT _DO
 %token _FOR _FROM _TO _DO_FOR
+%token _CASE _CASE_EQUALS _CASE_NOT
 %token _PRINT
 %token _MOD
 %token _GT _LT _ET _DF _GE _LE _OR _AND _NOT
@@ -100,6 +101,7 @@ COMMAND : CALL_FUNCTION ';' { $$.c = $1.c + $2.v; }
         | CMD_WHILE
         | CMD_DOWHILE ';'	{ $$.c = $1.c + $2.v; }
         | CMD_FOR
+        | CMD_SWITCH
         ;
         
 
@@ -128,6 +130,14 @@ CMD_DOWHILE : _DO BLOCK _WHILE E
 CMD_FOR : _FOR _ID _FROM E _TO E _EXECUTE BLOCK
 		{ $$.c = $1.v + " " + $2.v + " " + $3.v + " " + $4.c + " " + $5.v + " " + $6.c + " " + $7.v + " " + $8.c; }
         ;
+
+CMD_SWITCH : _CASE _ID SIWTCH_BLOCK { $$.c = $1.v + " " + $2.v + "\n" + $3.c; }
+           ;
+
+SIWTCH_BLOCK : _CASE_EQUALS F ':' BLOCK SIWTCH_BLOCK { $$.c = $1.v + " " + $2.v + $3.v + "\n" + $4.c + $5.c; }
+             | _CASE_NOT ':' BLOCK 					 { $$.c = $1.v + $2.v + "\n" + $3.c; }
+             | { $$.c = ""; }
+             ;
 
 CALL_FUNCTION : _EXECUTE_FUNCTION _ID _WITH '(' PARAMETERS ')' 
 { $$.c = $1.v + " " + $2.v + " " + $3.v + $4.v + " " + $5.c + " " + $6.v; }
@@ -200,11 +210,11 @@ E : E '+' E  { $$.c = $1.c + " " + $2.v + " " + $3.c; }
   | _ID '(' E ',' E ')'		// return one element of the matrix on a given position
   { $$.c = $1.v + $2.v + " " + $3.c + $4.v + " " + $5.c + " " + $6.v; }
   | CALL_FUNCTION
+  | _ID		 { $$.c = $1.v; }
   | F 		 { $$.c = $1.v; }
   ;
 
-F : _ID
-  | _CTE_INT
+F : _CTE_INT
   | _CTE_DOUBLE
   | _CTE_TRUE
   | _CTE_FALSE

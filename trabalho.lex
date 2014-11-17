@@ -54,6 +54,10 @@ STRING  \"[^"\n]*\"
 
 "execute"               {  yylval = Attribute( yytext ); return _EXECUTE; }
 
+"Case"               	{  yylval = Attribute( yytext ); return _CASE; }
+"equals"               	{  yylval = Attribute( yytext ); return _CASE_EQUALS; }
+"case not"              {  yylval = Attribute( yytext ); return _CASE_NOT; }
+
 
 "Print"                 {  yylval = Attribute( yytext ); return _PRINT; }
 
