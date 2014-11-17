@@ -20,12 +20,15 @@ Output: <integer> ret
 	d = a is lesser than b;
 	d = a is lesser than or equal to b;
 
+	<integer> f;
+	f = Execute function one_function();
+
+	Execute function other_function();
+	Execute function other_function with( a, b );
+
 	<boolean> e;
 
 	e = not ( b is different from a );
-
-
-	Execute function other_function;
-	Execute function other_function with a, b;
+	e = Execute function one_function();
 
 }

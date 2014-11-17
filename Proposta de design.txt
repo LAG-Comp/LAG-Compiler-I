@@ -18,8 +18,8 @@ Output: <type> output_name
 	// Code
 }
 //Function call
-Execute function function_name;
-Execute function function_name with value, value2, value3;
+Execute function function_name();
+Execute function function_name with( value, value2, value3 );
 
 //Control structures
 If EXPRESSION_IS_TRUE execute

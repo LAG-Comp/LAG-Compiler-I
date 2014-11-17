@@ -85,19 +85,21 @@ ARGUMENT : TYPE _COPY _ID 		{ $$.c = $1.t.name + $2.v + " " + $3.v; }
 		 | TYPE _REFERENCE _ID  { $$.c = $1.t.name + $2.v + " " + $3.v; }
 		 ;
 
-BLOCK : '{' LIST_VAR COMMANDS '}' { $$.c = $1.v + "\n" + $2.c + $3.c + "\n" + $4.v; }
+BLOCK : '{' COMMANDS '}' { $$.c = $1.v + "\n" + $2.c + "\n" + $3.v; }
 	  ;
 
 COMMANDS : COMMAND COMMANDS { $$.c = $1.c + "\n\n" + $2.c; }
          | { $$.c = ""; }
          ;
 
-COMMAND : CALL_FUNCTION
+COMMAND : CALL_FUNCTION ';' { $$.c = $1.c + $2.v; }
+		| VAR ';' 			{ $$.c = $1.c + $2.v; }
+        | ATR ';'			{ $$.c = $1.c + $2.v; }
         ;
 
-CALL_FUNCTION : _EXECUTE_FUNCTION _ID _WITH PARAMETERS ';' 
-{ $$.c = $1.v + " " + $2.v + " " + $3.v + " " + $4.c + $5.v; }
-              | _EXECUTE_FUNCTION _ID ';' { $$.c = $1.v + " " + $2.v + $3.v; }
+CALL_FUNCTION : _EXECUTE_FUNCTION _ID _WITH '(' PARAMETERS ')' 
+{ $$.c = $1.v + " " + $2.v + " " + $3.v + $4.v + " " + $5.c + " " + $6.v; }
+              | _EXECUTE_FUNCTION _ID '(' ')' { $$.c = $1.v + " " + $2.v + $3.v + $4.v; }
               ;
 
 PARAMETERS : PARAMETER ',' PARAMETERS { $$.c = $1.c + $2.v + $3.c; }
@@ -106,7 +108,7 @@ PARAMETERS : PARAMETER ',' PARAMETERS { $$.c = $1.c + $2.v + $3.c; }
 
 PARAMETER : E
           ;
-
+          
 LIST_VAR : VAR ';' LIST_VAR 	{ $$.c = $1.c + $2.v + "\n" + $3.c; }
          | ATR ';' LIST_VAR 	{ $$.c = $1.c + $2.v + "\n" + $3.c; }
          | 						{ $$.c = ""; }
@@ -143,6 +145,7 @@ E : E '+' E  { $$.c = $1.c + " " + $2.v + " " + $3.c; }
   | E _LE E  { $$.c = $1.c + " " + $2.v + " " + $3.c; }
   | '(' E ')'{ $$.c = $1.v + " " + $2.c + " " + $3.v; }
   | _NOT E 	 { $$.c = $1.v + " " + $2.c; }
+  | CALL_FUNCTION
   | F 		 { $$.c = $1.v; }
   ;
 
