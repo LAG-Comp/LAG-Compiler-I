@@ -47,7 +47,7 @@ Do
 While EXPRESSION_IS_TRUE
 
 // skip
-For COUNTER from A to B do
+For COUNTER from A to B execute
 {
 	
 }

@@ -74,6 +74,12 @@ STRING  \"[^"\n]*\"
 "and"                   {  yylval = Attribute( yytext ); return _AND; }
 "not"                   {  yylval = Attribute( yytext ); return _NOT; }
 
+"interval from"    		{ yylval = Attribute( yytext ); return _INTERVAL_FROM; }
+"filter x"    			{ yylval = Attribute( yytext ); return _FILTER_X; }
+"first"    				{ yylval = Attribute( yytext ); return _FIRST_N; }
+"last"    				{ yylval = Attribute( yytext ); return _LAST_N; }
+"sort"    				{ yylval = Attribute( yytext ); return _SORT; }
+
 
 "Starting up..."        {  yylval = Attribute( yytext ); return _STARTING_UP; }
 "End of file"           {  yylval = Attribute( yytext ); return _END_OF_FILE; }

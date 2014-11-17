@@ -63,4 +63,11 @@ Output: <integer> ret
 		{
 			Print "coisas default";
 		}
+
+	a = [ interval from 0 to 100 ];
 }
+
+Starting up...
+	<integer> gh;
+	gh = Execute function my_function();
+End of file

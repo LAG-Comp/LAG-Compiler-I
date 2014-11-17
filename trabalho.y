@@ -50,6 +50,7 @@ void yyerror(const char*);
 %token _WHILE _REPEAT _DO
 %token _FOR _FROM _TO _DO_FOR
 %token _CASE _CASE_EQUALS _CASE_NOT
+%token _INTERVAL_FROM _FILTER_X _FIRST_N _LAST_N _SORT
 %token _PRINT
 %token _MOD
 %token _GT _LT _ET _DF _GE _LE _OR _AND _NOT
@@ -65,8 +66,11 @@ void yyerror(const char*);
 
 %%
 
-START : LIST_VAR FUNCTIONS { cout << $1.c << "\n\n" << $2.c << endl; }
+START : LIST_VAR FUNCTIONS MAIN { cout << $1.c << "\n\n" << $2.c << "\n\n" << $3.c <<  endl; }
       ;
+
+MAIN : _STARTING_UP COMMANDS _END_OF_FILE { $$.c = $1.v + "\n" + $2.c + "\n" + $3.v; }
+     ;
 
 FUNCTIONS : FUNCTION FUNCTIONS { $$.c = $1.c + "\n\n" + $2.c; }
           | { $$.c = ""; }
@@ -181,6 +185,21 @@ ATR : _ID '=' E { $$.c = $1.v + " " + $2.v + " " + $3.c; }
     | _ID '(' E ',' E ')' '=' E
     { $$.c = $1.v + $2.v + " " + $3.c + $4.v + " " + $5.c + " " + $6.v + " " + $7.v + " " + $8.c; }
     ;
+
+PIPE : '[' PIPE_LIST ']' { $$.c = $1.v + " " + $2.c + " " + $3.v; }
+     ;
+
+PIPE_LIST : PIPE_CMD '|' PIPE_LIST { $$.c = $1.c + " " + $2.v + " " + $3.c; }
+          | PIPE_CMD 
+          ;
+
+PIPE_CMD : _INTERVAL_FROM _CTE_INT _TO _CTE_INT { $$.c = $1.v + " " + $2.v + " " + $3.v + " " + $4.v; }
+         | _FILTER_X E 							{ $$.c = $1.v + " " + $2.c; }
+         | _FIRST_N _CTE_INT 					{ $$.c = $1.v + " " + $2.v; }
+         | _LAST_N _CTE_INT 					{ $$.c = $1.v + " " + $2.v; }
+         | _SORT 								{ $$.c = $1.v; }
+         ;
+
     
 TYPE : _INT
      | _CHAR
@@ -210,6 +229,7 @@ E : E '+' E  { $$.c = $1.c + " " + $2.v + " " + $3.c; }
   | _ID '(' E ',' E ')'		// return one element of the matrix on a given position
   { $$.c = $1.v + $2.v + " " + $3.c + $4.v + " " + $5.c + " " + $6.v; }
   | CALL_FUNCTION
+  | PIPE
   | _ID		 { $$.c = $1.v; }
   | F 		 { $$.c = $1.v; }
   ;
