@@ -2,3 +2,11 @@ O que um for?
 Onde exatamente precisa ter blocos?
 O que define um switch?
 Arrays dinamicos ou estáticos? Ambos?
+
+como definir uma função sem parametros?
+
+Load: uhuuu
+{
+	Print "\o\ \o/ /o/";
+
+}

@@ -37,4 +37,21 @@ Output: <integer> ret
 	e = not ( b is different from a );
 	e = Execute function one_function();
 
+	If b is lesser than or equal to a execute
+	{
+		dfg = Execute function uhuuu();
+	}
+
+	While a is lesser than or equal to b repeat
+	{
+		<integer> ab;
+		Print ab;
+		Print "hello!\n";
+	}
+
+	For pudim from 1 to 4 execute
+	{
+		Print pudim;
+	}
+
 }

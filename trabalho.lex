@@ -41,7 +41,6 @@ STRING  \"[^"\n]*\"
 
 
 "If"                    {  yylval = Attribute( yytext ); return _IF; }
-"execute"               {  yylval = Attribute( yytext ); return _EXECUTE_IF; }
 "Else"                  {  yylval = Attribute( yytext ); return _ELSE; }
 "Else if"               {  yylval = Attribute( yytext ); return _ELSE_IF; }
 
@@ -52,7 +51,8 @@ STRING  \"[^"\n]*\"
 "For"                   {  yylval = Attribute( yytext ); return _FOR; }
 "from"                  {  yylval = Attribute( yytext ); return _FROM; }
 "to"                    {  yylval = Attribute( yytext ); return _TO; }
-"do"                    {  yylval = Attribute( yytext ); return _DO_FOR; }
+
+"execute"               {  yylval = Attribute( yytext ); return _EXECUTE; }
 
 
 "Print"                 {  yylval = Attribute( yytext ); return _PRINT; }

@@ -46,7 +46,7 @@ void yyerror(const char*);
 %token _REFERENCE _COPY
 %token _LOAD _INPUT _OUTPUT
 %token _EXECUTE_FUNCTION _WITH
-%token _IF _EXECUTE_IF _ELSE _ELSE_IF
+%token _IF _EXECUTE _ELSE _ELSE_IF
 %token _WHILE _REPEAT _DO
 %token _FOR _FROM _TO _DO_FOR
 %token _PRINT
@@ -95,6 +95,38 @@ COMMANDS : COMMAND COMMANDS { $$.c = $1.c + "\n\n" + $2.c; }
 COMMAND : CALL_FUNCTION ';' { $$.c = $1.c + $2.v; }
 		| VAR ';' 			{ $$.c = $1.c + $2.v; }
         | ATR ';'			{ $$.c = $1.c + $2.v; }
+        | PRINT ';'			{ $$.c = $1.c + $2.v; }
+        | CMD_IF
+        | CMD_WHILE
+        | CMD_DOWHILE ';'	{ $$.c = $1.c + $2.v; }
+        | CMD_FOR
+        ;
+        
+
+PRINT : _PRINT E { $$.c = $1.v + " " + $2.c; }
+      ;
+
+CMD_IF : _IF E _EXECUTE BLOCK
+		{ $$.c = $1.v + " " + $2.c + " " + $3.v + "\n" + $4.c; }
+       | _IF E _EXECUTE BLOCK ELSE_IFS _ELSE BLOCK
+		{ $$.c = $1.v + " " + $2.c + " " + $3.v + "\n" + $4.c + $5.c + "\n" + $6.v + "\n" + $7.c; }
+       ;
+
+ELSE_IFS : _ELSE_IF E _EXECUTE BLOCK ELSE_IFS
+		{ $$.c = $1.v + " " + $2.c + " " + $3.v + "\n" + $4.c + "\n" + $5.c; }
+         | { $$.c = ""; }
+         ;
+
+CMD_WHILE : _WHILE E _REPEAT BLOCK
+		{ $$.c = $1.v + " " + $2.c + " " + $3.v + "\n" + $4.c; }
+          ;
+
+CMD_DOWHILE : _DO BLOCK _WHILE E
+		{ $$.c = $1.v + "\n" + $2.c + "\n" + $3.v + " " + $4.c; }
+            ;
+
+CMD_FOR : _FOR _ID _FROM E _TO E _EXECUTE BLOCK
+		{ $$.c = $1.v + " " + $2.v + " " + $3.v + " " + $4.c + " " + $5.v + " " + $6.c + " " + $7.v + " " + $8.c; }
         ;
 
 CALL_FUNCTION : _EXECUTE_FUNCTION _ID _WITH '(' PARAMETERS ')' 
@@ -128,7 +160,7 @@ VAR : VAR ',' _ID  		{ $$.c = $1.c + $2.v + " " +  $3.v; }
     | _MATRIX TYPE _OF_SIZE _CTE_INT _BY _CTE_INT _ID
     { $$.c = $1.v + " " + $2.t.name + " " + $3.v + " " + $4.v + " " + $5.v + " " + $6.v; }
     | _GLOBAL _MATRIX TYPE _OF_SIZE _CTE_INT _BY _CTE_INT _ID
-    { $$.c = $1.v + " " + $2.v + " " + $3.t.name + " " + $4.v + " " + $5.v + " " + $6.v + " " + $7.v; }
+    { $$.c = $1.v + " " + $2.v + " " + $3.t.name + " " + $4.v + " " + $5.v + " " + $6.v + " " + $7.v + " " + $8.v; }
     ;
 
 ATR : _ID '=' E { $$.c = $1.v + " " + $2.v + " " + $3.c; }
