@@ -42,6 +42,12 @@ COMMENT  #[^#]*#
 "Execute function"      {  yylval = Attribute( yytext ); return _EXECUTE_FUNCTION; }
 "with"                  {  yylval = Attribute( yytext ); return _WITH; }
 
+"interval from"    		{ yylval = Attribute( yytext ); return _INTERVAL_FROM; }
+"filter"    			{ yylval = Attribute( yytext ); return _FILTER; }
+"first"    				{ yylval = Attribute( yytext ); return _FIRST_N; }
+"last"    				{ yylval = Attribute( yytext ); return _LAST_N; }
+"sort"    				{ yylval = Attribute( yytext ); return _SORT; }
+"for each"    		    { yylval = Attribute( yytext ); return _FOR_EACH; }
 
 "If"                    {  yylval = Attribute( yytext ); return _IF; }
 "Else"                  {  yylval = Attribute( yytext ); return _ELSE; }
@@ -77,13 +83,6 @@ COMMENT  #[^#]*#
 "and"                      	{  yylval = Attribute( yytext ); return _AND; }
 "not"                  	   	{  yylval = Attribute( yytext ); return _NOT; }
 
-"interval from"    		{ yylval = Attribute( yytext ); return _INTERVAL_FROM; }
-"filter x"    			{ yylval = Attribute( yytext ); return _FILTER_X; }
-"first"    				{ yylval = Attribute( yytext ); return _FIRST_N; }
-"last"    				{ yylval = Attribute( yytext ); return _LAST_N; }
-"sort"    				{ yylval = Attribute( yytext ); return _SORT; }
-"for each x"    		{ yylval = Attribute( yytext ); return _FOR_EACH_X; }
-
 "using criterion"    		{ yylval = Attribute( yytext ); return _CRITERION; }
 "merge"    					{ yylval = Attribute( yytext ); return _MERGE; }
 "split"    					{ yylval = Attribute( yytext ); return _SPLIT; }
@@ -98,6 +97,7 @@ COMMENT  #[^#]*#
 
 "true"     { yylval = Attribute( yytext ); return _CTE_TRUE; }
 "false"    { yylval = Attribute( yytext ); return _CTE_FALSE; }
+"x"		   { yylval = Attribute( yytext ); return _X; }
 
 {INT}      { yylval = Attribute( yytext ); return _CTE_INT; }
 {DOUBLE}   { yylval = Attribute( yytext ); return _CTE_DOUBLE; }
