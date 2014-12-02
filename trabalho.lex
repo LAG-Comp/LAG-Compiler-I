@@ -5,7 +5,7 @@ LETTER  [A-Za-z_]
 INT     {NUMBER}+
 DOUBLE  {NUMBER}+("."{NUMBER}+)
 ID      {LETTER}({LETTER}|{NUMBER})*
-STRING  \"[^"\n]*\"
+STRING  ["][^"\n]*["]
 COMMENT  #[^#]*#
 
 

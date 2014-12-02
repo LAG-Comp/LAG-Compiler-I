@@ -1,5 +1,8 @@
-all: trabalho entrada.cc
-	./trabalho < entrada.cc
+all: output.cpp
+	cat output.cpp
+
+output.cpp: trabalho entrada.cc
+	./trabalho < entrada.cc > output.cpp
 
 lex.yy.c: trabalho.lex
 	lex trabalho.lex

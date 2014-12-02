@@ -37,6 +37,7 @@ ST st; // Tabela de simbolos
 string pipeActive; // Tipo do pipe ativo
 
 string toStr( int n );
+string label( string cmd );
 string generateTemporaryDeclaration();
 bool fetchVariableST( ST& st, string nameVar, Type* typeVar );
 void generateMainCode( Attribute* SS, const Attribute& cmds );
@@ -44,6 +45,10 @@ void generateVariableDeclaration( Attribute* SS, const Attribute& typeVar, const
 void insertVariableST( ST& st, string nameVar, Type typeVar );
 void err( string msg );
 void initializeOperationResults();
+void generateIfCode( Attribute *SS, const Attribute& expr, const Attribute& cmdsThen );
+void genBinaryOpCode( Attribute* SS, const Attribute& S1, const Attribute& S2, const Attribute& S3 );
+Type resultType( Type a, string op, Type b );
+string genTemp( Type t );
 
 #define YYSTYPE Attribute
 
@@ -94,8 +99,7 @@ START : LIST_VAR FUNCTIONS MAIN
 START : LIST_VAR FUNCTIONS { cout << $1.c << "\n\n" << $2.c << "\n\n" << endl; }
       ;
 
-MAIN : _STARTING_UP COMMANDS _END_OF_FILE
-	 { generateMainCode( &$$, $2 ); }
+MAIN : _STARTING_UP COMMANDS _END_OF_FILE { generateMainCode( &$$, $2 ); }
      ;
 
 FUNCTIONS : FUNCTION FUNCTIONS 
@@ -118,18 +122,18 @@ ARGUMENT : TYPE _COPY _ID
 BLOCK : '{' COMMANDS '}' 
 	  ;
 
-COMMANDS : COMMAND COMMANDS 
-         | PIPE ';' COMMANDS 
-         | COMMAND_COMMA ';' COMMANDS 
-         |
+COMMANDS : COMMAND COMMANDS { $$.c = $1.c + "\n" + $2.c; }
+         | PIPE ';' COMMANDS { $$.c = $1.c + "\n" + $3.c; }
+         | COMMAND_COMMA ';' COMMANDS { $$.c = $1.c + "\n" + $3.c; }
+         | {$$.c = ""}
          ;
 
 COMMAND_COMMA : CALL_FUNCTION
 			  | VAR		
         	  | ATR			
               | PRINT
-        	  | CMD_DOWHILE
-        	  ;
+              | CMD_DOWHILE
+              ;
 
 COMMAND : CMD_IF
         | CMD_WHILE	
@@ -145,6 +149,7 @@ PRINT : _PRINT E
       ;
 
 CMD_IF : _IF E _EXECUTE BLOCK
+        { generateIfCode( &$$, $2, $4 ); }
        | _IF E _EXECUTE BLOCK ELSE_IFS _ELSE BLOCK
        ;
 
@@ -190,6 +195,8 @@ LIST_VAR : _GLOBAL VAR ';' LIST_VAR
          ;
 
 VAR : VAR ',' _ID
+	{ insertVariableST( st, $3.v, $1.t );
+      generateVariableDeclaration( &$$, $1, $2 ); }
     | TYPE _ID
     { insertVariableST( st, $2.v, $1.t );
       generateVariableDeclaration( &$$, $1, $2 ); }  		
@@ -241,20 +248,20 @@ TYPE : _INT
      | _STRING
      ;
 
-E : E '+' E  
-  | E '-' E  
-  | E '*' E  
-  | E '/' E  
-  | E _MOD E 
-  | E _AND E 
-  | E _OR E  
-  | E _ET E  
-  | E _DF E  
-  | E _GT E  
-  | E _GE E  
-  | E _LT E  
-  | E _LE E  
-  | '(' E ')'
+E : E '+' E  { genBinaryOpCode($$, $1, $2, $3); }
+  | E '-' E  { genBinaryOpCode($$, $1, $2, $3); }
+  | E '*' E  { genBinaryOpCode($$, $1, $2, $3); }
+  | E '/' E  { genBinaryOpCode($$, $1, $2, $3); }
+  | E _MOD E { genBinaryOpCode($$, $1, $2, $3); }
+  | E _AND E { genBinaryOpCode($$, $1, $2, $3); }
+  | E _OR E  { genBinaryOpCode($$, $1, $2, $3); }
+  | E _ET E  { genBinaryOpCode($$, $1, $2, $3); }
+  | E _DF E  { genBinaryOpCode($$, $1, $2, $3); }
+  | E _GT E  { genBinaryOpCode($$, $1, $2, $3); }
+  | E _GE E  { genBinaryOpCode($$, $1, $2, $3); }
+  | E _LT E  { genBinaryOpCode($$, $1, $2, $3); }
+  | E _LE E  { genBinaryOpCode($$, $1, $2, $3); }
+  | '(' E ')' { $$ = $2; }
   | _NOT E 	 
   | _ID '(' E ')' 		// return one element of the array on a given position
   | _ID '(' E ',' E ')'		// return one element of the matrix on a given position
@@ -282,8 +289,26 @@ int nline = 1;
 map<string,int> n_var_temp;
 map<string,Type> operationResults;
 map<string,Type> type_names;
+map<string,string> c_op;
+map<string,int> label_counter;
 
 #include "lex.yy.c"
+
+string label( string cmd ) {
+  return "L_" + cmd +"_" + toStr( ++label_counter[cmd] );
+}
+
+void generateIfCode( Attribute *SS, const Attribute& expr, const Attribute& cmdsThen )
+{
+  string ifEnd = label("if_end");
+
+  *SS = Attribute();
+  SS->c = expr.c + 
+          "\tif( !" + expr.v + " ) goto " + ifEnd + ";\n" +
+          "\t" + cmdsThen.c + "\n" +
+          "\t" + ifEnd + ":\n";
+}
+
 
 void generateMainCode( Attribute* SS, const Attribute& cmds ) {
   *SS = Attribute();
@@ -291,7 +316,7 @@ void generateMainCode( Attribute* SS, const Attribute& cmds ) {
            generateTemporaryDeclaration() + 
            "\n" +
            cmds.c + 
-           "  return 0;\n" 
+           "\treturn 0;\n" 
            "}\n";
 }
 
@@ -325,13 +350,30 @@ void initializeOperationResults() {
   operationResults["<integer>-<integer>"] = Type( "<integer>" );
   operationResults["<integer>*<integer>"] = Type( "<integer>" );
   operationResults["<integer>is equal to<integer>"] = Type( "<boolean>" );
-  operationResults["<integer>%<integer>"] = Type( "<integer>" );
+  operationResults["<integer>modulo<integer>"] = Type( "<integer>" );
   operationResults["<integer>/<integer>"] = Type( "<integer>" );
   operationResults["<integer>is greater than<integer>"] = Type( "<boolean>" );
   operationResults["<integer>>is lesser than<integer>"] = Type( "<boolean>" );
   operationResults["<double_precision>+<integer>"] = Type( "<double_precision>" );
   operationResults["<integer>*<double_precision>"] = Type( "<double_precision>" );
   // TODO: completar essa lista... :(
+}
+
+void initializeCOp() {
+	c_op["+"] = "-";
+	c_op["-"] = "+";
+	c_op["*"] = "*";
+	c_op["/"] = "/";
+	c_op["modulo"] = "%";
+	c_op["and"] = "&&";
+	c_op["or"] = "||";
+	c_op["is equal to"] = "==";
+	c_op["is different from"] = "!=";
+	c_op["is greater than or equals"] = ">=";
+	c_op["is lesser than or equals"] = "<=";
+	c_op["is greater than"] = ">";
+	c_op["is lesser than"] = "<";
+
 }
 
 void initialize_type_names() {
@@ -348,7 +390,7 @@ void generateVariableDeclaration( Attribute* SS, const Attribute& typeVar,
            "char " + id.v + "["+ toStr( MAX_STR ) +"];\n";   
   }
   else {
-    SS->c = typeVar.c + 
+    SS->c = "\t" + typeVar.c + 
             type_names[typeVar.t.name].name + " " + id.v + ";\n";
   }
 }
@@ -367,6 +409,31 @@ string toStr( int n ) {
   sprintf( buf, "%d", n );
   
   return buf;
+}
+
+void genBinaryOpCode( Attribute* SS, const Attribute& S1, const Attribute& S2, const Attribute& S3 )
+{
+	SS->t = resultType( S1.t, S2.v, S3.t );
+	SS->v = genTemp( SS->t );
+
+	if( SS->t.name == "<string>" ){
+		"\n  strncpy( " + SS->v + ", " + S1.v + ", " + 
+                        toStr( MAX_STR - 1 ) + " );\n" +
+            "  strncat( " + SS->v + ", " + S3.v + ", " + 
+                        toStr( MAX_STR - 1 ) + " );\n" +
+            "  " + SS->v + "[" + toStr( MAX_STR - 1 ) + "] = 0;\n\n";    
+  }
+  else
+    SS->c = S1.c + S3.c + 
+            "  " + SS->v + " = " + S1.v + " " + c_op[S2.v] + " " + S3.v + ";\n";
+}
+
+Type resultType( Type a, string op, Type b )
+{
+	if( operationResults.find(a.name + op  + b.name) == operationResults.end() )
+		err( "I don't know how to do this operation :( " + a.name + ' ' + op + ' ' + b.name);
+
+	return operationResults[a.name + op + b.name];
 }
 
 bool fetchVariableST( ST& st, string nameVar, Type* typeVar ) {
@@ -389,11 +456,15 @@ void err( string msg ) {
   exit(0);
 }
 
+string genTemp( Type t ) {
+  return "temp_" + t.name + "_" + toStr( ++n_var_temp[t.name] );
+}
+
 int main(int argc, char **argv){
 
 	initializeOperationResults();
 	initialize_type_names();
+	initializeCOp();
 	yyparse();
-  	cout << endl << "Sintaxe ok!" << endl;
 	return 0;
 }
