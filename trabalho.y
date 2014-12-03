@@ -10,6 +10,8 @@ symbol_table st;
 string pipeActive;
 
 string gen_temp_declaration();
+void gen_code_attribuition_without_index( Attribute* SS, Attribute& lvalue, 
+                                         const Attribute& rvalue );
 bool fetch_var_ST( symbol_table& st, string nameVar, Type* typeVar );
 void gen_main_code( Attribute* SS, const Attribute& cmds );
 void gen_var_declaration( Attribute* SS, const Attribute& typeVar, const Attribute& id );
@@ -177,7 +179,7 @@ VAR : VAR ',' _ID
     | _GLOBAL _MATRIX TYPE _OF_SIZE _CTE_INT _BY _CTE_INT _ID
     ;
 
-ATR : _ID '=' E 
+ATR : _ID '=' E { gen_code_attribuition_without_index( &$$, $1, $3 );}
     | _ID '=' '{' PARAMETERS '}' 
     | _ID '=' '{' LIST_ARRAY '}' 
     | _ID '(' E ')' '=' E      
@@ -246,11 +248,11 @@ E : E '+' E  { gen_bin_ops_code(&$$, $1, $2, $3); }
   | F      
   ;
 
-F : _CTE_INT
-  | _CTE_DOUBLE
-  | _CTE_TRUE
-  | _CTE_FALSE
-  | _CTE_STRING
+F : _CTE_INT 	{ $$.v = $1.v; $$.t = Type( "<integer>" );}
+  | _CTE_DOUBLE { $$.v = $1.v; $$.t = Type( "<double_precision>" );}
+  | _CTE_TRUE 	{ $$.v = $1.v; $$.t = Type( "<boolean>" );}
+  | _CTE_FALSE	{ $$.v = $1.v; $$.t = Type( "<boolean>" );}
+  | _CTE_STRING	{ $$.v = $1.v; $$.t = Type( "<string>" );}
   ;
 
 %% // END OF GRAMMAR //
@@ -310,6 +312,29 @@ string gen_temp_declaration() {
     c += "  char temp_string_" + toStr( i + 1 ) + "[" + toStr( MAX_STR )+ "];\n";
     
   return c;  
+}
+
+void gen_code_attribuition_without_index( Attribute* SS, Attribute& lvalue, 
+                                         const Attribute& rvalue ) {
+  if( fetch_var_ST( st, lvalue.v, &lvalue.t ) ) {
+    if( lvalue.t.name == rvalue.t.name ) {
+      if( lvalue.t.name == "<string>" ) {
+        SS->c = lvalue.c + rvalue.c + 
+                "  strncpy( " + lvalue.v + ", " + rvalue.v + ", " + 
+                            toStr( MAX_STR - 1 ) + " );\n" +
+                "  " + lvalue.v + "[" + toStr( MAX_STR - 1 ) + "] = 0;\n";
+      }
+      else
+        SS->c = lvalue.c + rvalue.c + 
+                "  " + lvalue.v + " = " + rvalue.v + ";\n"; 
+    }
+    else
+      err( "Expression " + rvalue.t.name + 
+            " can be attributed to variable " +
+            lvalue.t.name );
+    } 
+    else
+      err( "Variable not declared: " + lvalue.v );
 }
 
 void gen_var_declaration( Attribute* SS, const Attribute& typeVar, const Attribute& id ) {
@@ -382,7 +407,7 @@ void err( string msg )
 }
 
 string genTemp( Type t ) {
-  return "temp_" + t.name + "_" + toStr( ++n_var_temp[t.name] );
+  return "temp_" + type_names[t.name].name + "_" + toStr( ++n_var_temp[type_names[t.name].name] );
 }
 
 int main(int argc, char **argv){

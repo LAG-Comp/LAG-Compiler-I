@@ -7,6 +7,13 @@ bool is_number(const std::string& s)
     return !s.empty() && it == s.end();
 }
 
+int toInt( string n ) 
+{
+	int integer = 0;  
+	sscanf( n.c_str(), "%d", &integer );  
+	return integer;
+}
+
 string toStr( int n ) 
 {
 	char buf[1024] = "";  
@@ -25,9 +32,9 @@ void init_operation_results(map<string,Type> &operation_results)
 	operation_results["<integer>+<integer>"] = Type( "<integer>" );
 	operation_results["<integer>-<integer>"] = Type( "<integer>" );
 	operation_results["<integer>*<integer>"] = Type( "<integer>" );
-	operation_results["<integer>is equal to<integer>"] = Type( "<boolean>" );
-	operation_results["<integer>modulo<integer>"] = Type( "<integer>" );
 	operation_results["<integer>/<integer>"] = Type( "<integer>" );
+	operation_results["<integer>modulo<integer>"] = Type( "<integer>" );
+	operation_results["<integer>is equal to<integer>"] = Type( "<boolean>" );
 	operation_results["<integer>is greater than<integer>"] = Type( "<boolean>" );
 	operation_results["<integer>is lesser than<integer>"] = Type( "<boolean>" );
 	operation_results["<double_precision>+<integer>"] = Type( "<double_precision>" );
@@ -56,5 +63,9 @@ void init_type_names(map<string,Type> &type_names)
 {
 	type_names["<string>"] = Type("string");
 	type_names["<integer>"] = Type("int");
+	type_names["<boolean>"] = Type("bool");
+	type_names["<character>"] = Type("char");
+	type_names["<double_precision>"] = Type("double");
+	type_names["<floating_point>"] = Type("float");
 }
 
