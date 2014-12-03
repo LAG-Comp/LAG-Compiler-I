@@ -7,6 +7,13 @@ bool is_number(const std::string& s)
     return !s.empty() && it == s.end();
 }
 
+int toInt( string n ) 
+{
+	int integer = 0;  
+	sscanf( n.c_str(), "%d", &integer );  
+	return integer;
+}
+
 string toStr( int n ) 
 {
 	char buf[1024] = "";  
@@ -25,9 +32,9 @@ void init_operation_results(map<string,Type> &operation_results)
 	operation_results["<integer>+<integer>"] = Type( "<integer>" );
 	operation_results["<integer>-<integer>"] = Type( "<integer>" );
 	operation_results["<integer>*<integer>"] = Type( "<integer>" );
-	operation_results["<integer>is equal to<integer>"] = Type( "<boolean>" );
-	operation_results["<integer>modulo<integer>"] = Type( "<integer>" );
 	operation_results["<integer>/<integer>"] = Type( "<integer>" );
+	operation_results["<integer>modulo<integer>"] = Type( "<integer>" );
+	operation_results["<integer>is equal to<integer>"] = Type( "<boolean>" );
 	operation_results["<integer>is greater than<integer>"] = Type( "<boolean>" );
 	operation_results["<integer>is lesser than<integer>"] = Type( "<boolean>" );
 	operation_results["<double_precision>+<integer>"] = Type( "<double_precision>" );

@@ -95,9 +95,9 @@ COMMENT  #[^#]*#
 "End of file"           {  yylval = Attribute( yytext ); return _END_OF_FILE; }
 
 
+"x"		   { yylval = Attribute( yytext ); return _X; }
 "true"     { yylval = Attribute( yytext ); return _CTE_TRUE; }
 "false"    { yylval = Attribute( yytext ); return _CTE_FALSE; }
-"x"		   { yylval = Attribute( yytext ); return _X; }
 
 {INT}      { yylval = Attribute( yytext ); return _CTE_INT; }
 {DOUBLE}   { yylval = Attribute( yytext ); return _CTE_DOUBLE; }
