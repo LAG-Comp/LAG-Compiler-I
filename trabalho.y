@@ -17,9 +17,13 @@ void gen_main_code( Attribute* SS, const Attribute& cmds );
 void gen_var_declaration( Attribute* SS, const Attribute& typeVar, const Attribute& id );
 void insert_var_ST( symbol_table& st, string nameVar, Type typeVar );
 void gen_if_code( Attribute *SS, const Attribute& expr, const Attribute& cmdsThen );
+void gen_code_for( Attribute* SS, const Attribute& index,
+								  const Attribute& initial,
+                                  const Attribute& end, 
+                                  const Attribute& cmds );
 void gen_bin_ops_code( Attribute* SS, const Attribute& S1, const Attribute& S2, const Attribute& S3 );
 Type result_type( Type a, string op, Type b );
-string genTemp( Type t );
+string gen_temp( Type t );
 void err( string msg );
 
 #define YYSTYPE Attribute
@@ -91,8 +95,8 @@ ARGUMENT : TYPE _COPY _ID
      | _VOID        
      ;
 
-BLOCK : '{' COMMANDS '}' 
-    ;
+BLOCK : '{' COMMANDS '}' { $$ = $2; }
+      ;
 
 COMMANDS : COMMAND COMMANDS { $$.c = $1.c + "\n" + $2.c; }
          | PIPE ';' COMMANDS { $$.c = $1.c + "\n" + $3.c; }
@@ -136,6 +140,7 @@ CMD_DOWHILE : _DO BLOCK _WHILE E
             ;
 
 CMD_FOR : _FOR _ID _FROM E _TO E _EXECUTE BLOCK
+		{ gen_code_for( &$$, $2, $4, $6, $8 ); }
         ;
 
 CMD_SWITCH : _CASE _ID SIWTCH_BLOCK 
@@ -268,6 +273,39 @@ map<string,Type> type_names;
 
 #include "lex.yy.c"
 
+void gen_code_for( Attribute* SS, const Attribute& index,
+								  const Attribute& initial,
+                                  const Attribute& end, 
+                                  const Attribute& cmds ) {
+
+  	string cond_for = label( "cond_for", label_counter ),
+         	end_for = label( "end_for", label_counter );
+  	string valueNotCond = gen_temp( Type( "<boolean>" ) );
+
+  	insert_var_ST( st, index.v, Type("<integer>") );
+    
+    if( initial.t.name != "<integer>" ){
+    	err("Type of initial value must be <integer> and was found "+ initial.t.name);
+    }
+
+    if( end.t.name != "<integer>" ){
+    	err("Type of end value must be <integer> and was found "+ end.t.name);
+    }
+
+  	*SS = Attribute();
+
+ 	SS->c = "\tint " + index.v + ";\n" +
+ 			"\t" + index.v + " = " + initial.v + ";\n" +
+ 			"\t" + cond_for + ":\n" +
+ 			"\t" + valueNotCond + " = !( " + index.v + " < " + end.v + " );\n" +
+ 			"\tif( " + valueNotCond + " ) goto " + end_for + ";\n" +
+ 			"\n" + cmds.c + "\n" +
+ 			"\t" + index.v + "++" + ";\n" +
+ 			"\tgoto " + cond_for + ";\n" +
+ 			"\t" + end_for + ":\n\n";
+
+}
+
 void gen_if_code( Attribute *SS, const Attribute& expr, const Attribute& cmdsThen )
 {
   string ifEnd = label("if_end", label_counter);
@@ -369,7 +407,7 @@ void insert_var_ST( symbol_table& st, string nameVar, Type typeVar ) {
 void gen_bin_ops_code( Attribute* SS, const Attribute& S1, const Attribute& S2, const Attribute& S3 )
 {
   SS->t = result_type( S1.t, S2.v, S3.t );
-  SS->v = genTemp( SS->t );
+  SS->v = gen_temp( SS->t );
 
   if( SS->t.name == "<string>" ){
     "\n  strncpy( " + SS->v + ", " + S1.v + ", " + 
@@ -412,7 +450,7 @@ void err( string msg )
   exit(0);
 }
 
-string genTemp( Type t ) {
+string gen_temp( Type t ) {
   return "temp_" + type_names[t.name].name + "_" + toStr( ++n_var_temp[type_names[t.name].name] );
 }
 
