@@ -345,8 +345,14 @@ void gen_var_declaration( Attribute* SS, const Attribute& typeVar, const Attribu
            "char " + id.v + "["+ toStr( MAX_STR ) +"];\n";   
   }
   else {
-    SS->c = "\t" + typeVar.c + 
-            type_names[typeVar.t.name].name + " " + id.v + ";\n";
+  	if( typeVar.t.name == "<boolean>" ){
+  		SS->c = "\t" + typeVar.c + 
+        	"int" + " " + id.v + ";\n";
+  	}
+  	else{
+		SS->c = "\t" + typeVar.c + 
+        	type_names[typeVar.t.name].name + " " + id.v + ";\n";
+    }
   }
 }
 

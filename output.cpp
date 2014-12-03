@@ -12,7 +12,7 @@ int main() {
 
 	int b;
 
-	bool c;
+	int c;
 
   temp_bool_1 = 5 == 7;
   c = temp_bool_1;
