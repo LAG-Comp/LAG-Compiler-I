@@ -57,7 +57,7 @@ void yyerror(const char*);
 %left '+' '-'
 %left '*' '/'
 
-%%
+%% // END OF INCLUDES //
 
 START : LIST_VAR FUNCTIONS MAIN 
     { cout << "#include <stdio.h>\n"
@@ -253,7 +253,7 @@ F : _CTE_INT
   | _CTE_STRING
   ;
 
-%%
+%% // END OF GRAMMAR //
 
 int nline = 1;
 
