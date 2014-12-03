@@ -59,7 +59,7 @@ void yyerror(const char*);
 %left '+' '-'
 %left '*' '/'
 
-%%
+%% // END OF INCLUDES //
 
 START : LIST_VAR FUNCTIONS MAIN 
     { cout << "#include <stdio.h>\n"
@@ -255,7 +255,7 @@ F : _CTE_INT 	{ $$.v = $1.v; $$.t = Type( "<integer>" );}
   | _CTE_STRING	{ $$.v = $1.v; $$.t = Type( "<string>" );}
   ;
 
-%%
+%% // END OF GRAMMAR //
 
 int nline = 1;
 
