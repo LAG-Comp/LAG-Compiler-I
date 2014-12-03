@@ -56,5 +56,9 @@ void init_type_names(map<string,Type> &type_names)
 {
 	type_names["<string>"] = Type("string");
 	type_names["<integer>"] = Type("int");
+	type_names["<boolean>"] = Type("bool");
+	type_names["<character>"] = Type("char");
+	type_names["<double_precision>"] = Type("double");
+	type_names["<floating_point>"] = Type("float");
 }
 

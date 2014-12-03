@@ -382,7 +382,7 @@ void err( string msg )
 }
 
 string genTemp( Type t ) {
-  return "temp_" + t.name + "_" + toStr( ++n_var_temp[t.name] );
+  return "temp_" + type_names[t.name].name + "_" + toStr( ++n_var_temp[type_names[t.name].name] );
 }
 
 int main(int argc, char **argv){
