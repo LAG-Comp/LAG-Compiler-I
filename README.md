@@ -7,27 +7,27 @@ Final project for Compilers @UFRJ/2014.2
 Compilation
 -----------
 
-To do the compilation you need to install the bison++ with:
+To compile you must first install bison++ with:
 
 ```sudo apt-get install bison++```
 
-After that you can compile that with:
+Afterwards, compile the program using:
 
 ``make``
 
-The last command will compile the program and execute a test program.
+The last command will compile the program and execute the test input.
 
 
 Running
 -------
 
-To execute this compiler only type the follow:
+To execute this compiler use the following command:
 
 ```./trabalho < text_to_compile.lag```
 
-Maybe you won't have a permission to run the above command,
-so you will need give permission of execution to the file ```trabalho```
-with the follow command you will can do that:
+In case you do not have permission to run the line above,
+you will need change the permission of execution to the file ```trabalho```
+with the following command:
 
 ```chmod +x trabalho```
 

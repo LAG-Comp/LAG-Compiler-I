@@ -1,54 +1,24 @@
 %{
-#include <string>
-#include <stdio.h>
-#include <stdlib.h>
-#include <iostream>
-#include <map>
+#include "LAG-Util.h"
 
 using namespace std;
 
 const int MAX_STR = 256;
 
-struct Type {
-  string name;
-  
-  Type() {}
-  Type( string name ) {
-    this->name = name;
-  }
-};
+symbol_table st; 
 
-struct Attribute {
-  string v;  // Value
-  Type   t;  // type
-  string c;  // code
-  
-  Attribute() {}  // initialized automatic to empty ""
-  Attribute( string v, string t = "", string c = "" ) {
-    this->v = v;
-    this->t.name = t;
-    this->c = c;
-  }
-};
+string pipeActive;
 
-typedef map< string, Type > ST;
-ST st; // Tabela de simbolos
-
-string pipeActive; // Tipo do pipe ativo
-
-string toStr( int n );
-string label( string cmd );
-string generateTemporaryDeclaration();
-bool fetchVariableST( ST& st, string nameVar, Type* typeVar );
-void generateMainCode( Attribute* SS, const Attribute& cmds );
-void generateVariableDeclaration( Attribute* SS, const Attribute& typeVar, const Attribute& id );
-void insertVariableST( ST& st, string nameVar, Type typeVar );
-void err( string msg );
-void initializeOperationResults();
-void generateIfCode( Attribute *SS, const Attribute& expr, const Attribute& cmdsThen );
-void genBinaryOpCode( Attribute* SS, const Attribute& S1, const Attribute& S2, const Attribute& S3 );
-Type resultType( Type a, string op, Type b );
+string gen_temp_declaration();
+bool fetch_var_ST( symbol_table& st, string nameVar, Type* typeVar );
+void gen_main_code( Attribute* SS, const Attribute& cmds );
+void gen_var_declaration( Attribute* SS, const Attribute& typeVar, const Attribute& id );
+void insert_var_ST( symbol_table& st, string nameVar, Type typeVar );
+void gen_if_code( Attribute *SS, const Attribute& expr, const Attribute& cmdsThen );
+void gen_bin_ops_code( Attribute* SS, const Attribute& S1, const Attribute& S2, const Attribute& S3 );
+Type result_type( Type a, string op, Type b );
 string genTemp( Type t );
+void err( string msg );
 
 #define YYSTYPE Attribute
 
@@ -90,7 +60,7 @@ void yyerror(const char*);
 %%
 
 START : LIST_VAR FUNCTIONS MAIN 
-		{ cout << "#include <stdio.h>\n"
+    { cout << "#include <stdio.h>\n"
                "#include <stdlib.h>\n"
                "#include <string.h>\n\n"
             << $1.c << $2.c << $3.c << endl; }
@@ -99,7 +69,7 @@ START : LIST_VAR FUNCTIONS MAIN
 START : LIST_VAR FUNCTIONS { cout << $1.c << "\n\n" << $2.c << "\n\n" << endl; }
       ;
 
-MAIN : _STARTING_UP COMMANDS _END_OF_FILE { generateMainCode( &$$, $2 ); }
+MAIN : _STARTING_UP COMMANDS _END_OF_FILE { gen_main_code( &$$, $2 ); }
      ;
 
 FUNCTIONS : FUNCTION FUNCTIONS 
@@ -108,48 +78,48 @@ FUNCTIONS : FUNCTION FUNCTIONS
 
 FUNCTION : _LOAD _ID _INPUT ARGUMENTS _OUTPUT TYPE _ID BLOCK 
          | _LOAD _ID _INPUT ARGUMENTS _OUTPUT _VOID BLOCK
-		 ;
+     ;
 
 ARGUMENTS : ARGUMENT ',' ARGUMENTS 
- 		  | ARGUMENT
- 		  ;
+      | ARGUMENT
+      ;
 
-ARGUMENT : TYPE _COPY _ID 		
-		 | TYPE _REFERENCE _ID  
-		 | _VOID 				
-		 ;
+ARGUMENT : TYPE _COPY _ID     
+     | TYPE _REFERENCE _ID  
+     | _VOID        
+     ;
 
 BLOCK : '{' COMMANDS '}' 
-	  ;
+    ;
 
 COMMANDS : COMMAND COMMANDS { $$.c = $1.c + "\n" + $2.c; }
          | PIPE ';' COMMANDS { $$.c = $1.c + "\n" + $3.c; }
          | COMMAND_COMMA ';' COMMANDS { $$.c = $1.c + "\n" + $3.c; }
-         | {$$.c = ""}
+         | {$$.c = "";}
          ;
 
 COMMAND_COMMA : CALL_FUNCTION
-			  | VAR		
-        	  | ATR			
-              | PRINT
-              | CMD_DOWHILE
-              ;
+        | VAR   
+        | ATR     
+        | PRINT
+        | CMD_DOWHILE
+        ;
 
 COMMAND : CMD_IF
-        | CMD_WHILE	
+        | CMD_WHILE 
         | CMD_FOR
         | CMD_SWITCH
         ;
 
 COMMAND_TO_PIPE : COMMAND
-				| COMMAND_COMMA
-				;
+        | COMMAND_COMMA
+        ;
 
 PRINT : _PRINT E 
       ;
 
 CMD_IF : _IF E _EXECUTE BLOCK
-        { generateIfCode( &$$, $2, $4 ); }
+        { gen_if_code( &$$, $2, $4 ); }
        | _IF E _EXECUTE BLOCK ELSE_IFS _ELSE BLOCK
        ;
 
@@ -170,7 +140,7 @@ CMD_SWITCH : _CASE _ID SIWTCH_BLOCK
            ;
 
 SIWTCH_BLOCK : _CASE_EQUALS F ':' BLOCK SIWTCH_BLOCK 
-             | _CASE_NOT ':' BLOCK 					 
+             | _CASE_NOT ':' BLOCK           
              | 
              ;
 
@@ -179,8 +149,8 @@ CALL_FUNCTION : _EXECUTE_FUNCTION _ID _WITH '(' PARAMETERS ')'
               ;
 
 LIST_ARRAY : '{' PARAMETERS '}' ',' LIST_ARRAY 
-   		   | '{' PARAMETERS '}' 
-   		   ;
+         | '{' PARAMETERS '}' 
+         ;
 
 PARAMETERS : PARAMETER ',' PARAMETERS 
            | PARAMETER
@@ -189,18 +159,18 @@ PARAMETERS : PARAMETER ',' PARAMETERS
 PARAMETER : E
           ;
 
-LIST_VAR : _GLOBAL VAR ';' LIST_VAR 	
-         | ATR ';' LIST_VAR 	
-         | 						
+LIST_VAR : _GLOBAL VAR ';' LIST_VAR   
+         | ATR ';' LIST_VAR   
+         |            
          ;
 
 VAR : VAR ',' _ID
-	{ insertVariableST( st, $3.v, $1.t );
-      generateVariableDeclaration( &$$, $1, $2 ); }
+  { insert_var_ST( st, $3.v, $1.t );
+      gen_var_declaration( &$$, $1, $2 ); }
     | TYPE _ID
-    { insertVariableST( st, $2.v, $1.t );
-      generateVariableDeclaration( &$$, $1, $2 ); }  		
-    | _GLOBAL TYPE _ID 	
+    { insert_var_ST( st, $2.v, $1.t );
+      gen_var_declaration( &$$, $1, $2 ); }     
+    | _GLOBAL TYPE _ID  
     | _ARRAY TYPE _OF_SIZE _CTE_INT _ID
     | _GLOBAL _ARRAY TYPE _OF_SIZE _CTE_INT _ID
     | _MATRIX TYPE _OF_SIZE _CTE_INT _BY _CTE_INT _ID
@@ -210,7 +180,7 @@ VAR : VAR ',' _ID
 ATR : _ID '=' E 
     | _ID '=' '{' PARAMETERS '}' 
     | _ID '=' '{' LIST_ARRAY '}' 
-    | _ID '(' E ')' '=' E 		 
+    | _ID '(' E ')' '=' E      
     | _ID '(' E ',' E ')' '=' E
     ;
 
@@ -218,27 +188,27 @@ PIPE : '[' PIPE_SOURCE '|' PIPE_PROCESSORS '|' PIPE_CONSUMER ']'
      ;
 
 PIPE_SOURCE : _ID
-			| _INTERVAL_FROM _CTE_INT _TO _CTE_INT
-			;
+      | _INTERVAL_FROM _CTE_INT _TO _CTE_INT
+      ;
 
 PIPE_CONSUMER : _FOR_EACH _X '(' COMMAND_TO_PIPE ')'
-			  ;
+        ;
 
 PIPE_PROCESSORS : PIPE_PROCESSORS '|' PIPE_PROCESSOR
-			    | PIPE_PROCESSOR
-			    ;
+          | PIPE_PROCESSOR
+          ;
 
 PIPE_PROCESSOR : _FILTER _X E
-			   | _FIRST_N _CTE_INT
-			   | _LAST_N _CTE_INT
-			   | _SORT '(' SORT_PARAM ')'
-			   | _SPLIT _ID _TO _ID _CRITERION E
-			   | _MERGE _ID _WITH _ID _CRITERION E
-			   ;
+         | _FIRST_N _CTE_INT
+         | _LAST_N _CTE_INT
+         | _SORT '(' SORT_PARAM ')'
+         | _SPLIT _ID _TO _ID _CRITERION E
+         | _MERGE _ID _WITH _ID _CRITERION E
+         ;
 
 SORT_PARAM : _CRESCENT
-	       | _DECRESCENT 
-	       ;
+         | _DECRESCENT 
+         ;
 
 TYPE : _INT
      | _CHAR
@@ -248,32 +218,32 @@ TYPE : _INT
      | _STRING
      ;
 
-E : E '+' E  { genBinaryOpCode($$, $1, $2, $3); }
-  | E '-' E  { genBinaryOpCode($$, $1, $2, $3); }
-  | E '*' E  { genBinaryOpCode($$, $1, $2, $3); }
-  | E '/' E  { genBinaryOpCode($$, $1, $2, $3); }
-  | E _MOD E { genBinaryOpCode($$, $1, $2, $3); }
-  | E _AND E { genBinaryOpCode($$, $1, $2, $3); }
-  | E _OR E  { genBinaryOpCode($$, $1, $2, $3); }
-  | E _ET E  { genBinaryOpCode($$, $1, $2, $3); }
-  | E _DF E  { genBinaryOpCode($$, $1, $2, $3); }
-  | E _GT E  { genBinaryOpCode($$, $1, $2, $3); }
-  | E _GE E  { genBinaryOpCode($$, $1, $2, $3); }
-  | E _LT E  { genBinaryOpCode($$, $1, $2, $3); }
-  | E _LE E  { genBinaryOpCode($$, $1, $2, $3); }
+E : E '+' E  { gen_bin_ops_code(&$$, $1, $2, $3); }
+  | E '-' E  { gen_bin_ops_code(&$$, $1, $2, $3); }
+  | E '*' E  { gen_bin_ops_code(&$$, $1, $2, $3); }
+  | E '/' E  { gen_bin_ops_code(&$$, $1, $2, $3); }
+  | E _MOD E { gen_bin_ops_code(&$$, $1, $2, $3); }
+  | E _AND E { gen_bin_ops_code(&$$, $1, $2, $3); }
+  | E _OR E  { gen_bin_ops_code(&$$, $1, $2, $3); }
+  | E _ET E  { gen_bin_ops_code(&$$, $1, $2, $3); }
+  | E _DF E  { gen_bin_ops_code(&$$, $1, $2, $3); }
+  | E _GT E  { gen_bin_ops_code(&$$, $1, $2, $3); }
+  | E _GE E  { gen_bin_ops_code(&$$, $1, $2, $3); }
+  | E _LT E  { gen_bin_ops_code(&$$, $1, $2, $3); }
+  | E _LE E  { gen_bin_ops_code(&$$, $1, $2, $3); }
   | '(' E ')' { $$ = $2; }
-  | _NOT E 	 
-  | _ID '(' E ')' 		// return one element of the array on a given position
-  | _ID '(' E ',' E ')'		// return one element of the matrix on a given position
+  | _NOT E   
+  | _ID '(' E ')'     // return one element of the array on a given position
+  | _ID '(' E ',' E ')'   // return one element of the matrix on a given position
   | CALL_FUNCTION
   | _ID
-  { if( fetchVariableST( st, $1.v, &$$.t ) ) 
+  { if( fetch_var_ST( st, $1.v, &$$.t ) ) 
       $$.v = $1.v; 
     else
       err( "Variable not declared: " + $1.v );
   }
   | _X
-  | F 		 
+  | F      
   ;
 
 F : _CTE_INT
@@ -286,21 +256,19 @@ F : _CTE_INT
 %%
 
 int nline = 1;
+
 map<string,int> n_var_temp;
-map<string,Type> operationResults;
-map<string,Type> type_names;
-map<string,string> c_op;
 map<string,int> label_counter;
+
+map<string,Type> operation_results;
+map<string,string> c_op;
+map<string,Type> type_names;
 
 #include "lex.yy.c"
 
-string label( string cmd ) {
-  return "L_" + cmd +"_" + toStr( ++label_counter[cmd] );
-}
-
-void generateIfCode( Attribute *SS, const Attribute& expr, const Attribute& cmdsThen )
+void gen_if_code( Attribute *SS, const Attribute& expr, const Attribute& cmdsThen )
 {
-  string ifEnd = label("if_end");
+  string ifEnd = label("if_end", label_counter);
 
   *SS = Attribute();
   SS->c = expr.c + 
@@ -310,17 +278,17 @@ void generateIfCode( Attribute *SS, const Attribute& expr, const Attribute& cmds
 }
 
 
-void generateMainCode( Attribute* SS, const Attribute& cmds ) {
+void gen_main_code( Attribute* SS, const Attribute& cmds ) {
   *SS = Attribute();
   SS->c = "\nint main() {\n" +
-           generateTemporaryDeclaration() + 
+           gen_temp_declaration() + 
            "\n" +
            cmds.c + 
            "\treturn 0;\n" 
            "}\n";
 }
 
-string generateTemporaryDeclaration() {
+string gen_temp_declaration() {
   string c;
   
   for( int i = 0; i < n_var_temp["bool"]; i++ )
@@ -344,45 +312,7 @@ string generateTemporaryDeclaration() {
   return c;  
 }
 
-void initializeOperationResults() {
-  operationResults["<string>+<string>"] = Type( "<string>" );
-  operationResults["<integer>+<integer>"] = Type( "<integer>" );
-  operationResults["<integer>-<integer>"] = Type( "<integer>" );
-  operationResults["<integer>*<integer>"] = Type( "<integer>" );
-  operationResults["<integer>is equal to<integer>"] = Type( "<boolean>" );
-  operationResults["<integer>modulo<integer>"] = Type( "<integer>" );
-  operationResults["<integer>/<integer>"] = Type( "<integer>" );
-  operationResults["<integer>is greater than<integer>"] = Type( "<boolean>" );
-  operationResults["<integer>>is lesser than<integer>"] = Type( "<boolean>" );
-  operationResults["<double_precision>+<integer>"] = Type( "<double_precision>" );
-  operationResults["<integer>*<double_precision>"] = Type( "<double_precision>" );
-  // TODO: completar essa lista... :(
-}
-
-void initializeCOp() {
-	c_op["+"] = "-";
-	c_op["-"] = "+";
-	c_op["*"] = "*";
-	c_op["/"] = "/";
-	c_op["modulo"] = "%";
-	c_op["and"] = "&&";
-	c_op["or"] = "||";
-	c_op["is equal to"] = "==";
-	c_op["is different from"] = "!=";
-	c_op["is greater than or equals"] = ">=";
-	c_op["is lesser than or equals"] = "<=";
-	c_op["is greater than"] = ">";
-	c_op["is lesser than"] = "<";
-
-}
-
-void initialize_type_names() {
-  type_names["<string>"] = Type("string");
-  type_names["<integer>"] = Type("int");
-}
-
-void generateVariableDeclaration( Attribute* SS, const Attribute& typeVar,
-                                           const Attribute& id ) {
+void gen_var_declaration( Attribute* SS, const Attribute& typeVar, const Attribute& id ) {
   SS->v = "";
   SS->t = typeVar.t;
   if( typeVar.t.name == "<string>" ) {
@@ -395,29 +325,23 @@ void generateVariableDeclaration( Attribute* SS, const Attribute& typeVar,
   }
 }
 
-void insertVariableST( ST& st, string nameVar, Type typeVar ) {
-  if( !fetchVariableST( st, nameVar, &typeVar ) )
+void insert_var_ST( symbol_table& st, string nameVar, Type typeVar ) {
+  if( !fetch_var_ST( st, nameVar, &typeVar ) )
     st[nameVar] = typeVar;
   else  
     err( "Variable already defined: " + nameVar );
 }
 
 
-string toStr( int n ) {
-  char buf[1024] = "";
-  
-  sprintf( buf, "%d", n );
-  
-  return buf;
-}
 
-void genBinaryOpCode( Attribute* SS, const Attribute& S1, const Attribute& S2, const Attribute& S3 )
+
+void gen_bin_ops_code( Attribute* SS, const Attribute& S1, const Attribute& S2, const Attribute& S3 )
 {
-	SS->t = resultType( S1.t, S2.v, S3.t );
-	SS->v = genTemp( SS->t );
+  SS->t = result_type( S1.t, S2.v, S3.t );
+  SS->v = genTemp( SS->t );
 
-	if( SS->t.name == "<string>" ){
-		"\n  strncpy( " + SS->v + ", " + S1.v + ", " + 
+  if( SS->t.name == "<string>" ){
+    "\n  strncpy( " + SS->v + ", " + S1.v + ", " + 
                         toStr( MAX_STR - 1 ) + " );\n" +
             "  strncat( " + SS->v + ", " + S3.v + ", " + 
                         toStr( MAX_STR - 1 ) + " );\n" +
@@ -428,15 +352,15 @@ void genBinaryOpCode( Attribute* SS, const Attribute& S1, const Attribute& S2, c
             "  " + SS->v + " = " + S1.v + " " + c_op[S2.v] + " " + S3.v + ";\n";
 }
 
-Type resultType( Type a, string op, Type b )
+Type result_type( Type a, string op, Type b )
 {
-	if( operationResults.find(a.name + op  + b.name) == operationResults.end() )
-		err( "I don't know how to do this operation :( " + a.name + ' ' + op + ' ' + b.name);
+  if( operation_results.find(a.name + op + b.name) == operation_results.end() )
+    err( "I don't know how to do this operation :( " + a.name + ' ' + op + ' ' + b.name);
 
-	return operationResults[a.name + op + b.name];
+  return operation_results[a.name + op + b.name];
 }
 
-bool fetchVariableST( ST& st, string nameVar, Type* typeVar ) {
+bool fetch_var_ST( symbol_table& st, string nameVar, Type* typeVar ) {
   if( st.find( nameVar ) != st.end() ) {
     *typeVar = st[ nameVar ];
     return true;
@@ -451,7 +375,8 @@ void yyerror( const char* st )
    printf(  "Line: %d\nNear: '%s'\n", nline, yytext );
 }
 
-void err( string msg ) {
+void err( string msg ) 
+{
   yyerror( msg.c_str() );
   exit(0);
 }
@@ -462,9 +387,9 @@ string genTemp( Type t ) {
 
 int main(int argc, char **argv){
 
-	initializeOperationResults();
-	initialize_type_names();
-	initializeCOp();
-	yyparse();
-	return 0;
+  init_operation_results(operation_results);
+  init_type_names(type_names);
+  init_c_operands_table(c_op);
+  yyparse();
+  return 0;
 }
