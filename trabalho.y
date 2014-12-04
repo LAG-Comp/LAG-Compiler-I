@@ -16,11 +16,13 @@ string gen_temp( Type t );
 string gen_temp_declaration();
 void gen_code_attribution_without_index( Attribute* SS, Attribute& lvalue, const Attribute& rvalue );
 void gen_code_bin_ops( Attribute* SS, const Attribute& S1, const Attribute& S2, const Attribute& S3 );
+void gen_code_do_while( Attribute* SS, const Attribute& cmds, const Attribute& expr );
 void gen_code_for( Attribute* SS, const Attribute& index, const Attribute& initial, const Attribute& end, const Attribute& cmds );
 void gen_code_if( Attribute *SS, const Attribute& expr, const Attribute& cmdsThen );
 void gen_code_if_else( Attribute *SS, const Attribute& expr, const Attribute& cmdsThen, const Attribute& else_ifs, const Attribute& cmdsElse );
 void gen_code_main( Attribute* SS, const Attribute& cmds );
 void gen_code_print( Attribute* SS, const Attribute& cmds, const Attribute& expr );
+void gen_code_while( Attribute* SS, const Attribute& expr, const Attribute& cmds );
 void gen_var_declaration( Attribute* SS, const Attribute& typeVar, const Attribute& id );
 void insert_var_ST( symbol_table& st, string nameVar, Type typeVar );
 Type result_type( Type a, string op, Type b );
@@ -139,9 +141,11 @@ ELSE_IFS : _ELSE_IF E _EXECUTE BLOCK ELSE_IFS
          ;
 
 CMD_WHILE : _WHILE E _REPEAT BLOCK
+          { gen_code_while( &$$, $2, $4 ); }
           ;
 
 CMD_DOWHILE : _DO BLOCK _WHILE E
+            { gen_code_do_while( &$$, $2, $4 ); }
             ;
 
 CMD_FOR : _FOR INDEX_FOR _FROM E _TO E _EXECUTE BLOCK
@@ -331,6 +335,29 @@ void gen_code_for( Attribute* SS, const Attribute& index,
       "\tgoto " + cond_for + ";\n" +
       "\t" + end_for + ":\n\n";
 
+}
+
+void gen_code_while( Attribute* SS, const Attribute& expr, const Attribute& cmds )
+{
+  string whileEnd = new_label("while_end", label_counter);
+
+  *SS = Attribute();
+  SS->c = expr.c + 
+          "\t" + expr.v + "= !" + expr.v + ";\n" +
+          "\tif( " + expr.v + " ) goto " + whileEnd + ";\n" +
+          "\t" + cmds.c + "\n" +
+          whileEnd + ":\n";
+}
+
+void gen_code_do_while( Attribute* SS, const Attribute& cmds, const Attribute& expr )
+{
+  string doWhileBegin = new_label("do_while_begin", label_counter);
+
+  *SS = Attribute();
+  SS->c = expr.c + 
+          doWhileBegin + ":\n";
+          "\t" + cmds.c + "\n" +
+          "\tif( " + expr.v + " ) goto " + doWhileBegin + ";\n";
 }
 
 void gen_code_if( Attribute *SS, const Attribute& expr, const Attribute& cmdsThen )
