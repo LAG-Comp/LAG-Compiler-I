@@ -5,12 +5,13 @@ using namespace std;
 
 const int MAX_STR = 256;
 
-symbol_table st; 
+symbol_table st;
+symbol_table global_st;
 
 string pipeActive;
 
 bool fetch_var_ST( symbol_table& st, string nameVar, Type* typeVar );
-string gen_defined_variable();
+string gen_defined_variable(map<string,Type>& sim_table);
 string gen_temp( Type t );
 string gen_temp_declaration();
 void gen_code_attribution_without_index( Attribute* SS, Attribute& lvalue, const Attribute& rvalue );
@@ -68,10 +69,8 @@ START : LIST_VAR FUNCTIONS MAIN
     { cout << "#include <stdio.h>\n"
                "#include <stdlib.h>\n"
                "#include <string.h>\n\n"
+            << gen_defined_variable( global_st )
             << $1.c << $2.c << $3.c << endl; }
-      ;
-      
-START : LIST_VAR FUNCTIONS { cout << $1.c << "\n\n" << $2.c << "\n\n" << endl; }
       ;
 
 MAIN : _STARTING_UP COMMANDS _END_OF_FILE { gen_code_main( &$$, $2 ); }
@@ -176,16 +175,15 @@ PARAMETERS : PARAMETER ',' PARAMETERS
 PARAMETER : E
           ;
 
-LIST_VAR : _GLOBAL VAR ';' LIST_VAR   
-         | ATR ';' LIST_VAR   
-         |            
+LIST_VAR : _GLOBAL TYPE _ID ';' LIST_VAR { insert_var_ST( global_st, $3.v, $2.t ); }
+    	 | _GLOBAL _ARRAY TYPE _OF_SIZE _CTE_INT _ID ';' LIST_VAR
+    	 | _GLOBAL _MATRIX TYPE _OF_SIZE _CTE_INT _BY _CTE_INT _ID ';' LIST_VAR
+         | 
          ;
 
-VAR : VAR ',' _ID
-    { insert_var_ST( st, $3.v, $1.t ); }
-    | TYPE _ID
-    { insert_var_ST( st, $2.v, $1.t ); }     
-    | _GLOBAL TYPE _ID  
+VAR : VAR ',' _ID 			{ insert_var_ST( st, $3.v, $1.t ); }
+    | TYPE _ID 				{ insert_var_ST( st, $2.v, $1.t ); }     
+    | _GLOBAL TYPE _ID  	{ insert_var_ST( global_st, $3.v, $2.t ); }
     | _ARRAY TYPE _OF_SIZE _CTE_INT _ID
     | _GLOBAL _ARRAY TYPE _OF_SIZE _CTE_INT _ID
     | _MATRIX TYPE _OF_SIZE _CTE_INT _BY _CTE_INT _ID
@@ -295,13 +293,13 @@ void gen_code_print( Attribute* SS, const Attribute& cmds, const Attribute& expr
 				"\tprintf( \"true\" );\n";
 	}
 
-  if( expr.t.name == "<floating_point>" || expr.t.name == "<double_precision>" ){
-    SS->c = cmds.c + expr.c + "\tprintf( \"%f\" , " + expr.v + " );\n";
-  }
+  	if( expr.t.name == "<floating_point>" || expr.t.name == "<double_precision>" ){
+    	SS->c = cmds.c + expr.c + "\tprintf( \"%f\" , " + expr.v + " );\n";
+  	}
 
-  if( expr.t.name == "<string>" ){
-    SS->c = cmds.c + expr.c + "\tprintf( \"%s\" , " + expr.v + " );\n";
-  }
+  	if( expr.t.name == "<string>" ){
+   		SS->c = cmds.c + expr.c + "\tprintf( \"%s\" , " + expr.v + " );\n";
+  	}
 }
 
 void gen_code_for( Attribute* SS, const Attribute& index,
@@ -368,7 +366,7 @@ void gen_code_main( Attribute* SS, const Attribute& cmds ) {
   SS->c = "\nint main() {\n" +
            gen_temp_declaration() + 
            "\n" +
-           gen_defined_variable() +
+           gen_defined_variable(st) +
            "\n" +
            cmds.c + 
            "\treturn 0;\n" 
@@ -399,15 +397,19 @@ string gen_temp_declaration() {
   return c;  
 }
 
-string gen_defined_variable(){
+string gen_defined_variable(map<string,Type>& sim_table){
 	string c;
 	map<string,Type>::iterator it;
 
-	for( it = st.begin(); it != st.end(); ++it ){
-		if( it->second.name == "<string>")
+	for( it = sim_table.begin(); it != sim_table.end(); ++it ){
+		if( it->second.name == "<string>" )
 			c += "\tchar " + it->first + "[" + toStr( MAX_STR )+ "];\n";
-		else
-		    c += "\t" + type_names[it->second.name].name + " " + it->first + ";\n";
+		else {
+			if( it->second.name == "<boolean>" )
+		    	c += "\tint " + it->first + ";\n";
+		    else
+		    	c += "\t" + type_names[it->second.name].name + " " + it->first + ";\n";
+		}
 	}
 
 	return c;
@@ -455,15 +457,12 @@ void gen_var_declaration( Attribute* SS, const Attribute& typeVar, const Attribu
   }
 }
 
-void insert_var_ST( symbol_table& st, string nameVar, Type typeVar ) {
-  if( !fetch_var_ST( st, nameVar, &typeVar ) )
-    st[nameVar] = typeVar;
+void insert_var_ST( symbol_table& sim_t, string nameVar, Type typeVar ) {
+  if( !fetch_var_ST( st, nameVar, &typeVar ) && !fetch_var_ST( global_st, nameVar, &typeVar) )
+    sim_t[nameVar] = typeVar;
   else  
     err( "Variable already defined: " + nameVar );
 }
-
-
-
 
 void gen_code_bin_ops( Attribute* SS, const Attribute& S1, const Attribute& S2, const Attribute& S3 )
 {

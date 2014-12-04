@@ -1,3 +1,5 @@
+Global <boolean> aba;
+Global <string> uhuu;
 Starting up...
 <integer> a;
 a = 10;

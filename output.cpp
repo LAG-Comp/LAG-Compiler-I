@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+	int aba;
+	char uhuu[256];
 
 int main() {
 	int temp_bool_1;
