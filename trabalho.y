@@ -10,6 +10,7 @@ symbol_table st;
 string pipeActive;
 
 bool fetch_var_ST( symbol_table& st, string nameVar, Type* typeVar );
+string gen_defined_variable();
 string gen_temp( Type t );
 string gen_temp_declaration();
 void gen_code_attribution_without_index( Attribute* SS, Attribute& lvalue, const Attribute& rvalue );
@@ -181,11 +182,9 @@ LIST_VAR : _GLOBAL VAR ';' LIST_VAR
          ;
 
 VAR : VAR ',' _ID
-  { insert_var_ST( st, $3.v, $1.t );
-      gen_var_declaration( &$$, $1, $2 ); }
+    { insert_var_ST( st, $3.v, $1.t ); }
     | TYPE _ID
-    { insert_var_ST( st, $2.v, $1.t );
-      gen_var_declaration( &$$, $1, $2 ); }     
+    { insert_var_ST( st, $2.v, $1.t ); }     
     | _GLOBAL TYPE _ID  
     | _ARRAY TYPE _OF_SIZE _CTE_INT _ID
     | _GLOBAL _ARRAY TYPE _OF_SIZE _CTE_INT _ID
@@ -367,6 +366,8 @@ void gen_code_main( Attribute* SS, const Attribute& cmds ) {
   SS->c = "\nint main() {\n" +
            gen_temp_declaration() + 
            "\n" +
+           gen_defined_variable() +
+           "\n" +
            cmds.c + 
            "\treturn 0;\n" 
            "}\n";
@@ -394,6 +395,20 @@ string gen_temp_declaration() {
     c += "  char temp_string_" + toStr( i + 1 ) + "[" + toStr( MAX_STR )+ "];\n";
     
   return c;  
+}
+
+string gen_defined_variable(){
+	string c;
+	map<string,Type>::iterator it;
+
+	for( it = st.begin(); it != st.end(); ++it ){
+		if( it->second.name == "<string>")
+			c += "\tchar " + it->first + "[" + toStr( MAX_STR )+ "];\n";
+		else
+		    c += "\t" + type_names[it->second.name].name + " " + it->first + ";\n";
+	}
+
+	return c;
 }
 
 void gen_code_attribution_without_index( Attribute* SS, Attribute& lvalue, 
