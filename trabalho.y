@@ -295,43 +295,44 @@ void gen_code_print( Attribute* SS, const Attribute& cmds, const Attribute& expr
 				"\tprintf( \"true\" );\n";
 	}
 
-	if( expr.t.name == "<floating_point>" || expr.t.name == "<double_precision>" ){
-		SS->c = cmds.c + expr.c + "\tprintf( \"%f\" , " + expr.v + " );\n";
-	}
+  if( expr.t.name == "<floating_point>" || expr.t.name == "<double_precision>" ){
+    SS->c = cmds.c + expr.c + "\tprintf( \"%f\" , " + expr.v + " );\n";
+  }
 
-	if( expr.t.name == "<string>" ){
-		SS->c = cmds.c + expr.c + "\tprintf( \"%s\" , " + expr.v + " );\n";
-	}
+  if( expr.t.name == "<string>" ){
+    SS->c = cmds.c + expr.c + "\tprintf( \"%s\" , " + expr.v + " );\n";
+  }
 }
 
 void gen_code_for( Attribute* SS, const Attribute& index,
-								  const Attribute& initial,
+                  const Attribute& initial,
                                   const Attribute& end, 
                                   const Attribute& cmds ) {
 
-  	string cond_for = new_label( "cond_for", label_counter ),
-         	end_for = new_label( "end_for", label_counter );
-  	string valueNotCond = gen_temp( Type( "<boolean>" ) );
+    string cond_for = new_label( "cond_for", label_counter ),
+          end_for = new_label( "end_for", label_counter );
+    string valueNotCond = gen_temp( Type( "<boolean>" ) );
     
     if( initial.t.name != "<integer>" ){
-    	err("Type of initial value must be <integer> and was found "+ initial.t.name);
+      err("Type of initial value must be <integer> and was found "+ initial.t.name);
     }
 
     if( end.t.name != "<integer>" ){
-    	err("Type of end value must be <integer> and was found "+ end.t.name);
+      err("Type of end value must be <integer> and was found "+ end.t.name);
     }
 
-  	*SS = Attribute();
+    *SS = Attribute();
 
- 	SS->c = "\tint " + index.v + ";\n" +
- 			"\t" + index.v + " = " + initial.v + ";\n" +
- 			"\t" + cond_for + ":\n" +
- 			"\t" + valueNotCond + " = !( " + index.v + " < " + end.v + " );\n" +
- 			"\tif( " + valueNotCond + " ) goto " + end_for + ";\n" +
- 			"\n" + cmds.c + "\n" +
- 			"\t" + index.v + "++" + ";\n" +
- 			"\tgoto " + cond_for + ";\n" +
- 			"\t" + end_for + ":\n\n";
+  SS->c = "\tint " + index.v + ";\n" +
+      "\t" + index.v + " = " + initial.v + ";\n" +
+      "\t" + cond_for + ":\n" +
+      "\t" + valueNotCond + " = " + index.v + " < " + end.v + ";\n" +
+      "\t" + valueNotCond + " = !" + valueNotCond + ";\n" +
+      "\tif( " + valueNotCond + " ) goto " + end_for + ";\n" +
+      "\n" + cmds.c + "\n" +
+      "\t" + index.v + "= 1 + " + index.v + ";\n" +
+      "\tgoto " + cond_for + ";\n" +
+      "\t" + end_for + ":\n\n";
 
 }
 
@@ -341,7 +342,8 @@ void gen_code_if( Attribute *SS, const Attribute& expr, const Attribute& cmdsThe
 
   *SS = Attribute();
   SS->c = expr.c + 
-          "\tif( !" + expr.v + " ) goto " + ifEnd + ";\n" +
+          "\t" + expr.v + "= !" + expr.v + ";\n" +
+          "\tif( " + expr.v + " ) goto " + ifEnd + ";\n" +
           "\t" + cmdsThen.c + "\n" +
           "\t" + ifEnd + ":\n";
 }
@@ -353,7 +355,8 @@ void gen_code_if_else( Attribute *SS, const Attribute& expr, const Attribute& cm
 
   *SS = Attribute();
   SS->c = expr.c + 
-          "\tif( !" + expr.v + " ) goto " + ifEnd + ";\n" +
+          "\t" + expr.v + "= !" + expr.v + ";\n" +
+          "\tif( " + expr.v + " ) goto " + ifEnd + ";\n" +
           "\t" + cmdsThen.c + "\n" +
           "\t" + ifEnd + ":\n" + 
           "\t" + cmdsElse.c + "\n" +
@@ -442,9 +445,9 @@ void gen_var_declaration( Attribute* SS, const Attribute& typeVar, const Attribu
            "char " + id.v + "["+ toStr( MAX_STR ) +"];\n";   
   }
   else {
-  	if( typeVar.t.name == "<boolean>" ){
-  		SS->c = "\t" + typeVar.c + 
-        	"int" + " " + id.v + ";\n";
+    if( typeVar.t.name == "<boolean>" ){
+      SS->c = "\t" + typeVar.c + 
+          "int" + " " + id.v + ";\n";
   	}
   	else{
 		SS->c = "\t" + typeVar.c + 
