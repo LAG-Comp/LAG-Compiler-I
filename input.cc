@@ -1,8 +1,16 @@
 Global <boolean> aba;
-Global <string> uhuu;
 Starting up...
 <integer> a;
 a = 10;
+
+While 5 is greater than 8 repeat{
+	a = 3;
+}
+
+Do{
+	a = 2;
+}While 4 is lesser than 7 ;
+
 <integer> b;
 b = 15;
 If a is lesser than b execute

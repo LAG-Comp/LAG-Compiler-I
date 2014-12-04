@@ -354,9 +354,9 @@ void gen_code_do_while( Attribute* SS, const Attribute& cmds, const Attribute& e
   string doWhileBegin = new_label("do_while_begin", label_counter);
 
   *SS = Attribute();
-  SS->c = expr.c + 
-          doWhileBegin + ":\n";
+  SS->c = doWhileBegin + ":\n" +
           "\t" + cmds.c + "\n" +
+          "\t" + expr.c +
           "\tif( " + expr.v + " ) goto " + doWhileBegin + ";\n";
 }
 

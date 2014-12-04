@@ -3,11 +3,12 @@
 #include <string.h>
 
 	int aba;
-	char uhuu[256];
 
 int main() {
 	int temp_bool_1;
 	int temp_bool_2;
+	int temp_bool_3;
+	int temp_bool_4;
 
 	int a;
 	int b;
@@ -16,12 +17,27 @@ int main() {
 
   a = 10;
 
+  temp_bool_1 = 5 > 8;
+	temp_bool_1= !temp_bool_1;
+	if( temp_bool_1 ) goto L_while_end_1;
+	  a = 3;
+
+
+L_while_end_1:
+
+L_do_while_begin_1:
+	  a = 2;
+
+
+	  temp_bool_2 = 4 < 7;
+	if( temp_bool_2 ) goto L_do_while_begin_1;
+
 
   b = 15;
 
-  temp_bool_1 = a < b;
-	temp_bool_1= !temp_bool_1;
-	if( temp_bool_1 ) goto L_if_end_1;
+  temp_bool_3 = a < b;
+	temp_bool_3= !temp_bool_3;
+	if( temp_bool_3 ) goto L_if_end_1;
 		printf( "%d" , a );
 	printf( "%s" , "\n" );
 
@@ -34,9 +50,9 @@ int main() {
 
 	i = 0;
 	L_cond_for_1:
-	temp_bool_2 = i < 19;
-	temp_bool_2 = !temp_bool_2;
-	if( temp_bool_2 ) goto L_end_for_1;
+	temp_bool_4 = i < 19;
+	temp_bool_4 = !temp_bool_4;
+	if( temp_bool_4 ) goto L_end_for_1;
 
 	printf( "%d" , i );
 	printf( "%s" , "\n" );
