@@ -323,8 +323,7 @@ void gen_code_for( Attribute* SS, const Attribute& index,
 
     *SS = Attribute();
 
-  SS->c = "\tint " + index.v + ";\n" +
-      "\t" + index.v + " = " + initial.v + ";\n" +
+  SS->c = "\t" + index.v + " = " + initial.v + ";\n" +
       "\t" + cond_for + ":\n" +
       "\t" + valueNotCond + " = " + index.v + " < " + end.v + ";\n" +
       "\t" + valueNotCond + " = !" + valueNotCond + ";\n" +
@@ -380,22 +379,22 @@ string gen_temp_declaration() {
   string c;
   
   for( int i = 0; i < n_var_temp["bool"]; i++ )
-    c += "  int temp_bool_" + toStr( i + 1 ) + ";\n";
+    c += "\tint temp_bool_" + toStr( i + 1 ) + ";\n";
     
   for( int i = 0; i < n_var_temp["int"]; i++ )
-    c += "  int temp_int_" + toStr( i + 1 ) + ";\n";
+    c += "\tint temp_int_" + toStr( i + 1 ) + ";\n";
 
     for( int i = 0; i < n_var_temp["char"]; i++ )
-    c += "  char temp_char_" + toStr( i + 1 ) + ";\n";
+    c += "\tchar temp_char_" + toStr( i + 1 ) + ";\n";
     
   for( int i = 0; i < n_var_temp["double"]; i++ )
-    c += "  double temp_double_" + toStr( i + 1 ) + ";\n";
+    c += "\tdouble temp_double_" + toStr( i + 1 ) + ";\n";
 
     for( int i = 0; i < n_var_temp["float"]; i++ )
-    c += "  float temp_float_" + toStr( i + 1 ) + ";\n";
+    c += "\tfloat temp_float_" + toStr( i + 1 ) + ";\n";
     
   for( int i = 0; i < n_var_temp["string"]; i++ )
-    c += "  char temp_string_" + toStr( i + 1 ) + "[" + toStr( MAX_STR )+ "];\n";
+    c += "\tchar temp_string_" + toStr( i + 1 ) + "[" + toStr( MAX_STR )+ "];\n";
     
   return c;  
 }
