@@ -69,6 +69,7 @@ COMMENT  #[^#]*#
 
 
 "Print"                 {  yylval = Attribute( yytext ); return _PRINT; }
+"together"              {  yylval = Attribute( yytext ); return _TOGETHER; }
 
 
 "modulo"                {  yylval = Attribute( yytext ); return _MOD; }

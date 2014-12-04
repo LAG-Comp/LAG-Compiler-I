@@ -21,6 +21,9 @@ void gen_code_for( Attribute* SS, const Attribute& index,
 								  const Attribute& initial,
                                   const Attribute& end, 
                                   const Attribute& cmds );
+void gen_code_print( Attribute* SS, 
+					const Attribute& cmds, 
+					const Attribute& expr );
 void gen_bin_ops_code( Attribute* SS, const Attribute& S1, const Attribute& S2, const Attribute& S3 );
 Type result_type( Type a, string op, Type b );
 string gen_temp( Type t );
@@ -48,7 +51,7 @@ void yyerror(const char*);
 %token _FOR _FROM _TO _DO_FOR
 %token _CASE _CASE_EQUALS _CASE_NOT
 %token _INTERVAL_FROM _FILTER _FIRST_N _LAST_N _SORT _FOR_EACH
-%token _PRINT
+%token _PRINT _TOGETHER
 %token _MOD
 %token _GT _LT _ET _DF _GE _LE _OR _AND _NOT
 %token _STARTING_UP _END_OF_FILE 
@@ -121,8 +124,14 @@ COMMAND_TO_PIPE : COMMAND
         | COMMAND_COMMA
         ;
 
-PRINT : _PRINT E 
+PRINT : _PRINT EXPR_PRINT
+	  { $$ = $2; }
       ;
+
+EXPR_PRINT : EXPR_PRINT _TOGETHER E
+			{ gen_code_print( &$$, $1, $3 ); }
+		   | { $$ = Attribute(); }
+		   ;
 
 CMD_IF : _IF E _EXECUTE BLOCK
         { gen_if_code( &$$, $2, $4 ); }
@@ -139,9 +148,13 @@ CMD_WHILE : _WHILE E _REPEAT BLOCK
 CMD_DOWHILE : _DO BLOCK _WHILE E
             ;
 
-CMD_FOR : _FOR _ID _FROM E _TO E _EXECUTE BLOCK
+CMD_FOR : _FOR INDEX_FOR _FROM E _TO E _EXECUTE BLOCK
 		{ gen_code_for( &$$, $2, $4, $6, $8 ); }
         ;
+
+INDEX_FOR : _ID
+		  { insert_var_ST( st, $1.v, Type("<integer>") );}
+		  ;
 
 CMD_SWITCH : _CASE _ID SIWTCH_BLOCK 
            ;
@@ -273,6 +286,29 @@ map<string,Type> type_names;
 
 #include "lex.yy.c"
 
+void gen_code_print( Attribute* SS, const Attribute& cmds, const Attribute& expr ){
+
+	if( expr.t.name == "<integer>" ){
+		SS->c = cmds.c + expr.c + "\tprintf( \"%d\" , " + expr.v + " );\n";
+	}
+
+	if( expr.t.name == "<boolean>" ){
+		string if_bool_label = label( "if_bool", label_counter );
+		SS->c = cmds.c + expr.c + "\tif( " + expr.v + " ) goto " + if_bool_label + ";\n" +
+				"\tprintf( \"false\" );\n" +
+				"\t" + if_bool_label + ":\n" +
+				"\tprintf( \"true\" );\n";
+	}
+
+	if( expr.t.name == "<floating_point>" || expr.t.name == "<double_precision>" ){
+		SS->c = cmds.c + expr.c + "\tprintf( \"%f\" , " + expr.v + " );\n";
+	}
+
+	if( expr.t.name == "<string>" ){
+		SS->c = cmds.c + expr.c + "\tprintf( \"%s\" , " + expr.v + " );\n";
+	}
+}
+
 void gen_code_for( Attribute* SS, const Attribute& index,
 								  const Attribute& initial,
                                   const Attribute& end, 
@@ -281,8 +317,6 @@ void gen_code_for( Attribute* SS, const Attribute& index,
   	string cond_for = label( "cond_for", label_counter ),
          	end_for = label( "end_for", label_counter );
   	string valueNotCond = gen_temp( Type( "<boolean>" ) );
-
-  	insert_var_ST( st, index.v, Type("<integer>") );
     
     if( initial.t.name != "<integer>" ){
     	err("Type of initial value must be <integer> and was found "+ initial.t.name);
