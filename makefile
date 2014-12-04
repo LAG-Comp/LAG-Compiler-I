@@ -18,3 +18,6 @@ trabalho: lex.yy.c y.tab.c
 
 clean:
 	rm lex.yy.c y.tab.c y.output trabalho output.cpp
+
+gabarito: output.cpp
+	./gabarit.o < output.cpp

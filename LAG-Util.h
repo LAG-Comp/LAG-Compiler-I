@@ -35,7 +35,7 @@ typedef map<string,Type> symbol_table;
 bool is_number(const std::string& s);
 string toStr( int n );
 int toInt( string n );
-string label( string cmd, map<string,int> &label_counter ); 
+string new_label( string cmd, map<string,int> &label_counter ); 
 
 void init_operation_results(map<string,Type> &operation_results);
 void init_c_operands_table(map<string,string> &c_op);

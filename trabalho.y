@@ -9,24 +9,19 @@ symbol_table st;
 
 string pipeActive;
 
-string gen_temp_declaration();
-void gen_code_attribuition_without_index( Attribute* SS, Attribute& lvalue, 
-                                         const Attribute& rvalue );
 bool fetch_var_ST( symbol_table& st, string nameVar, Type* typeVar );
-void gen_main_code( Attribute* SS, const Attribute& cmds );
+string gen_temp( Type t );
+string gen_temp_declaration();
+void gen_code_attribution_without_index( Attribute* SS, Attribute& lvalue, const Attribute& rvalue );
+void gen_code_bin_ops( Attribute* SS, const Attribute& S1, const Attribute& S2, const Attribute& S3 );
+void gen_code_for( Attribute* SS, const Attribute& index, const Attribute& initial, const Attribute& end, const Attribute& cmds );
+void gen_code_if( Attribute *SS, const Attribute& expr, const Attribute& cmdsThen );
+void gen_code_if_else( Attribute *SS, const Attribute& expr, const Attribute& cmdsThen, const Attribute& else_ifs, const Attribute& cmdsElse );
+void gen_code_main( Attribute* SS, const Attribute& cmds );
+void gen_code_print( Attribute* SS, const Attribute& cmds, const Attribute& expr );
 void gen_var_declaration( Attribute* SS, const Attribute& typeVar, const Attribute& id );
 void insert_var_ST( symbol_table& st, string nameVar, Type typeVar );
-void gen_if_code( Attribute *SS, const Attribute& expr, const Attribute& cmdsThen );
-void gen_code_for( Attribute* SS, const Attribute& index,
-								  const Attribute& initial,
-                                  const Attribute& end, 
-                                  const Attribute& cmds );
-void gen_code_print( Attribute* SS, 
-					const Attribute& cmds, 
-					const Attribute& expr );
-void gen_bin_ops_code( Attribute* SS, const Attribute& S1, const Attribute& S2, const Attribute& S3 );
 Type result_type( Type a, string op, Type b );
-string gen_temp( Type t );
 void err( string msg );
 
 #define YYSTYPE Attribute
@@ -78,7 +73,7 @@ START : LIST_VAR FUNCTIONS MAIN
 START : LIST_VAR FUNCTIONS { cout << $1.c << "\n\n" << $2.c << "\n\n" << endl; }
       ;
 
-MAIN : _STARTING_UP COMMANDS _END_OF_FILE { gen_main_code( &$$, $2 ); }
+MAIN : _STARTING_UP COMMANDS _END_OF_FILE { gen_code_main( &$$, $2 ); }
      ;
 
 FUNCTIONS : FUNCTION FUNCTIONS 
@@ -134,7 +129,7 @@ EXPR_PRINT : EXPR_PRINT _THIS E
 		   ;
 
 CMD_IF : _IF E _EXECUTE BLOCK
-        { gen_if_code( &$$, $2, $4 ); }
+        { gen_code_if( &$$, $2, $4 ); }
        | _IF E _EXECUTE BLOCK ELSE_IFS _ELSE BLOCK
        ;
 
@@ -197,7 +192,7 @@ VAR : VAR ',' _ID
     | _GLOBAL _MATRIX TYPE _OF_SIZE _CTE_INT _BY _CTE_INT _ID
     ;
 
-ATR : _ID '=' E { gen_code_attribuition_without_index( &$$, $1, $3 );}
+ATR : _ID '=' E { gen_code_attribution_without_index( &$$, $1, $3 );}
     | _ID '=' '{' PARAMETERS '}' 
     | _ID '=' '{' LIST_ARRAY '}' 
     | _ID '(' E ')' '=' E      
@@ -238,19 +233,19 @@ TYPE : _INT
      | _STRING
      ;
 
-E : E '+' E  { gen_bin_ops_code(&$$, $1, $2, $3); }
-  | E '-' E  { gen_bin_ops_code(&$$, $1, $2, $3); }
-  | E '*' E  { gen_bin_ops_code(&$$, $1, $2, $3); }
-  | E '/' E  { gen_bin_ops_code(&$$, $1, $2, $3); }
-  | E _MOD E { gen_bin_ops_code(&$$, $1, $2, $3); }
-  | E _AND E { gen_bin_ops_code(&$$, $1, $2, $3); }
-  | E _OR E  { gen_bin_ops_code(&$$, $1, $2, $3); }
-  | E _ET E  { gen_bin_ops_code(&$$, $1, $2, $3); }
-  | E _DF E  { gen_bin_ops_code(&$$, $1, $2, $3); }
-  | E _GT E  { gen_bin_ops_code(&$$, $1, $2, $3); }
-  | E _GE E  { gen_bin_ops_code(&$$, $1, $2, $3); }
-  | E _LT E  { gen_bin_ops_code(&$$, $1, $2, $3); }
-  | E _LE E  { gen_bin_ops_code(&$$, $1, $2, $3); }
+E : E '+' E  { gen_code_bin_ops(&$$, $1, $2, $3); }
+  | E '-' E  { gen_code_bin_ops(&$$, $1, $2, $3); }
+  | E '*' E  { gen_code_bin_ops(&$$, $1, $2, $3); }
+  | E '/' E  { gen_code_bin_ops(&$$, $1, $2, $3); }
+  | E _MOD E { gen_code_bin_ops(&$$, $1, $2, $3); }
+  | E _AND E { gen_code_bin_ops(&$$, $1, $2, $3); }
+  | E _OR E  { gen_code_bin_ops(&$$, $1, $2, $3); }
+  | E _ET E  { gen_code_bin_ops(&$$, $1, $2, $3); }
+  | E _DF E  { gen_code_bin_ops(&$$, $1, $2, $3); }
+  | E _GT E  { gen_code_bin_ops(&$$, $1, $2, $3); }
+  | E _GE E  { gen_code_bin_ops(&$$, $1, $2, $3); }
+  | E _LT E  { gen_code_bin_ops(&$$, $1, $2, $3); }
+  | E _LE E  { gen_code_bin_ops(&$$, $1, $2, $3); }
   | '(' E ')' { $$ = $2; }
   | _NOT E   
   | _ID '(' E ')'     // return one element of the array on a given position
@@ -293,7 +288,7 @@ void gen_code_print( Attribute* SS, const Attribute& cmds, const Attribute& expr
 	}
 
 	if( expr.t.name == "<boolean>" ){
-		string if_bool_label = label( "if_bool", label_counter );
+		string if_bool_label = new_label( "if_bool", label_counter );
 		SS->c = cmds.c + expr.c + "\tif( " + expr.v + " ) goto " + if_bool_label + ";\n" +
 				"\tprintf( \"false\" );\n" +
 				"\t" + if_bool_label + ":\n" +
@@ -314,8 +309,8 @@ void gen_code_for( Attribute* SS, const Attribute& index,
                                   const Attribute& end, 
                                   const Attribute& cmds ) {
 
-  	string cond_for = label( "cond_for", label_counter ),
-         	end_for = label( "end_for", label_counter );
+  	string cond_for = new_label( "cond_for", label_counter ),
+         	end_for = new_label( "end_for", label_counter );
   	string valueNotCond = gen_temp( Type( "<boolean>" ) );
     
     if( initial.t.name != "<integer>" ){
@@ -340,9 +335,9 @@ void gen_code_for( Attribute* SS, const Attribute& index,
 
 }
 
-void gen_if_code( Attribute *SS, const Attribute& expr, const Attribute& cmdsThen )
+void gen_code_if( Attribute *SS, const Attribute& expr, const Attribute& cmdsThen )
 {
-  string ifEnd = label("if_end", label_counter);
+  string ifEnd = new_label("if_end", label_counter);
 
   *SS = Attribute();
   SS->c = expr.c + 
@@ -351,8 +346,22 @@ void gen_if_code( Attribute *SS, const Attribute& expr, const Attribute& cmdsThe
           "\t" + ifEnd + ":\n";
 }
 
+void gen_code_if_else( Attribute *SS, const Attribute& expr, const Attribute& cmdsThen, const Attribute& else_ifs, const Attribute& cmdsElse )
+{
+  string ifEnd = new_label("if_end", label_counter);
+  string ifChainEnd = new_label("if_chain_end", label_counter);
 
-void gen_main_code( Attribute* SS, const Attribute& cmds ) {
+  *SS = Attribute();
+  SS->c = expr.c + 
+          "\tif( !" + expr.v + " ) goto " + ifEnd + ";\n" +
+          "\t" + cmdsThen.c + "\n" +
+          "\t" + ifEnd + ":\n" + 
+          "\t" + cmdsElse.c + "\n" +
+          "\t" + ifChainEnd + ":\n";  
+}
+
+
+void gen_code_main( Attribute* SS, const Attribute& cmds ) {
   *SS = Attribute();
   SS->c = "\nint main() {\n" +
            gen_temp_declaration() + 
@@ -386,7 +395,7 @@ string gen_temp_declaration() {
   return c;  
 }
 
-void gen_code_attribuition_without_index( Attribute* SS, Attribute& lvalue, 
+void gen_code_attribution_without_index( Attribute* SS, Attribute& lvalue, 
                                          const Attribute& rvalue ) {
   if( fetch_var_ST( st, lvalue.v, &lvalue.t ) ) {
     if( lvalue.t.name == rvalue.t.name ) {
@@ -438,7 +447,7 @@ void insert_var_ST( symbol_table& st, string nameVar, Type typeVar ) {
 
 
 
-void gen_bin_ops_code( Attribute* SS, const Attribute& S1, const Attribute& S2, const Attribute& S3 )
+void gen_code_bin_ops( Attribute* SS, const Attribute& S1, const Attribute& S2, const Attribute& S3 )
 {
   SS->t = result_type( S1.t, S2.v, S3.t );
   SS->v = gen_temp( SS->t );

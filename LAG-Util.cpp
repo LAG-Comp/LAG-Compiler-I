@@ -21,7 +21,7 @@ string toStr( int n )
 	return buf;
 }
 
-string label( string cmd, map<string,int> &label_counter )
+string new_label( string cmd, map<string,int> &label_counter )
 {
   	return "L_" + cmd +"_" + toStr( ++label_counter[cmd] );
 }
