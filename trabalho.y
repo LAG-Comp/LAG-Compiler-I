@@ -128,13 +128,14 @@ EXPR_PRINT : EXPR_PRINT _THIS E
 		   | { $$ = Attribute(); }
 		   ;
 
-CMD_IF : _IF E _EXECUTE BLOCK
-        { gen_code_if( &$$, $2, $4 ); }
+CMD_IF : _IF E _EXECUTE BLOCK 
+         { gen_code_if( &$$, $2, $4 ); }
        | _IF E _EXECUTE BLOCK ELSE_IFS _ELSE BLOCK
+         { gen_code_if_else( &$$, $2, $4, $5, $7 ); cout << "BLAGH" << '\n'; }
        ;
 
 ELSE_IFS : _ELSE_IF E _EXECUTE BLOCK ELSE_IFS
-         | 
+         | { $$ = Attribute(); }
          ;
 
 CMD_WHILE : _WHILE E _REPEAT BLOCK

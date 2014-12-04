@@ -1,7 +1,15 @@
 Starting up...
 <integer> a;
 a = 10;
-For i from a to 15 execute {
-	Print this i this "\n";
+<integer> b;
+b = 15;
+If a is lesser than b execute
+{
+	Print this a this "\n";
 }
+Else
+{
+	Print this "\n";
+}
+
 End of file
