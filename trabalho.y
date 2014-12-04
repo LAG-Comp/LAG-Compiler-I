@@ -51,7 +51,7 @@ void yyerror(const char*);
 %token _FOR _FROM _TO _DO_FOR
 %token _CASE _CASE_EQUALS _CASE_NOT
 %token _INTERVAL_FROM _FILTER _FIRST_N _LAST_N _SORT _FOR_EACH
-%token _PRINT _TOGETHER
+%token _PRINT _THIS
 %token _MOD
 %token _GT _LT _ET _DF _GE _LE _OR _AND _NOT
 %token _STARTING_UP _END_OF_FILE 
@@ -128,7 +128,7 @@ PRINT : _PRINT EXPR_PRINT
 	  { $$ = $2; }
       ;
 
-EXPR_PRINT : EXPR_PRINT _TOGETHER E
+EXPR_PRINT : EXPR_PRINT _THIS E
 			{ gen_code_print( &$$, $1, $3 ); }
 		   | { $$ = Attribute(); }
 		   ;
