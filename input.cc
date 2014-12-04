@@ -12,4 +12,9 @@ Else
 	Print this "\n";
 }
 
+For i from 0 to 19 execute
+{
+	Print this i this "\n";
+}
+
 End of file
