@@ -36,7 +36,7 @@ COMMENT  #[^#]*#
 "<copy>"                {  yylval = Attribute( yytext ); return _COPY; }
 
 "Load:"                 {  yylval = Attribute( yytext ); return _LOAD; }
-"Input:"                 {  yylval = Attribute( yytext ); return _INPUT; }
+"Input:"                {  yylval = Attribute( yytext ); return _INPUT; }
 "Output:"               {  yylval = Attribute( yytext ); return _OUTPUT; }
 
 "Execute function"      {  yylval = Attribute( yytext ); return _EXECUTE_FUNCTION; }
@@ -69,7 +69,8 @@ COMMENT  #[^#]*#
 
 
 "Print"                 {  yylval = Attribute( yytext ); return _PRINT; }
-"this"              {  yylval = Attribute( yytext ); return _THIS; }
+"this"              	{  yylval = Attribute( yytext ); return _THIS; }
+"Scan"        			{  yylval = Attribute( yytext ); return _SCAN; }
 
 
 "modulo"                {  yylval = Attribute( yytext ); return _MOD; }

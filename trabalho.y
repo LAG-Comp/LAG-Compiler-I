@@ -22,6 +22,7 @@ void gen_code_if( Attribute *SS, const Attribute& expr, const Attribute& cmdsThe
 void gen_code_if_else( Attribute *SS, const Attribute& expr, const Attribute& cmdsThen, const Attribute& cmdsElse );
 void gen_code_main( Attribute* SS, const Attribute& cmds );
 void gen_code_print( Attribute* SS, const Attribute& cmds, const Attribute& expr );
+void gen_code_scan( Attribute* SS, const Attribute& var_type, const Attribute& var_name );
 void gen_code_while( Attribute* SS, const Attribute& expr, const Attribute& cmds );
 void gen_var_declaration( Attribute* SS, const Attribute& typeVar, const Attribute& id );
 void insert_var_ST( symbol_table& st, string nameVar, Type typeVar );
@@ -50,7 +51,7 @@ void yyerror(const char*);
 %token _FOR _FROM _TO _DO_FOR
 %token _CASE _CASE_EQUALS _CASE_NOT
 %token _INTERVAL_FROM _FILTER _FIRST_N _LAST_N _SORT _FOR_EACH
-%token _PRINT _THIS
+%token _PRINT _THIS _SCAN
 %token _MOD
 %token _GT _LT _ET _DF _GE _LE _OR _AND _NOT
 %token _STARTING_UP _END_OF_FILE 
@@ -91,9 +92,9 @@ PARAMETERS : PARAMETER ',' PARAMETERS
       ;
 
 PARAMETER : TYPE _COPY _ID     
-     	  | TYPE _REFERENCE _ID  
-     	  | _VOID        
-     	  ;
+       	  | TYPE _REFERENCE _ID  
+       	  | _VOID        
+       	  ;
 
 BLOCK : '{' COMMANDS '}' { $$ = $2; }
       ;
@@ -107,7 +108,8 @@ COMMANDS : COMMAND COMMANDS { $$.c = $1.c + "\n" + $2.c; }
 COMMAND_COMMA : CALL_FUNCTION
         	  | VAR   
         	  | ATR     
-        	  | PRINT
+            | PRINT
+        	  | SCAN
         	  | CMD_DOWHILE
         	  ;
 
@@ -122,13 +124,22 @@ COMMAND_TO_PIPE : COMMAND
         ;
 
 PRINT : _PRINT EXPR_PRINT
-	  { $$ = $2; }
+    { $$ = $2; }
       ;
 
 EXPR_PRINT : EXPR_PRINT _THIS E
-			{ gen_code_print( &$$, $1, $3 ); }
-		   | { $$ = Attribute(); }
-		   ;
+      { gen_code_print( &$$, $1, $3 ); }
+       | { $$ = Attribute(); }
+       ;
+
+SCAN : _SCAN SCAN_TYPE _TO _ID
+    { gen_code_scan( &$$, $2, $4 ); }
+    ;
+
+SCAN_TYPE: _INT
+         | _FLOAT
+         | _DOUBLE
+         ;
 
 CMD_IF : _IF E _EXECUTE BLOCK 
          { gen_code_if( &$$, $2, $4 ); }
@@ -145,7 +156,7 @@ CMD_DOWHILE : _DO BLOCK _WHILE E
             ;
 
 CMD_FOR : _FOR INDEX_FOR _FROM E _TO E _EXECUTE BLOCK
-		{ gen_code_for( &$$, $2, $4, $6, $8 ); }
+		    { gen_code_for( &$$, $2, $4, $6, $8 ); }
         ;
 
 INDEX_FOR : _ID
@@ -311,10 +322,26 @@ void gen_code_print( Attribute* SS, const Attribute& cmds, const Attribute& expr
   	}
 }
 
-void gen_code_for( Attribute* SS, const Attribute& index,
-                  const Attribute& initial,
-                                  const Attribute& end, 
-                                  const Attribute& cmds ) {
+void gen_code_scan( Attribute* SS, const Attribute& var_type, const Attribute& var_name )
+{
+
+  if( var_type.v == "<integer>" )
+  {
+    SS->c =  "\tscanf( \"%d\" , &" + var_name.v + " );\n";
+  }
+  else if( var_type.v == "<floating_point>" || var_type.v == "<double_precision>" )
+  {
+    SS->c = "\tscanf( \"%f\" , &" + var_name.v + " );\n";
+  }
+  else
+  {
+    SS->c == "printf(\"WHAT IS GOING ON?!?!?\"\n)";
+  }
+
+}
+
+
+void gen_code_for( Attribute* SS, const Attribute& index, const Attribute& initial, const Attribute& end, const Attribute& cmds ) {
 
     string cond_for = new_label( "cond_for", label_counter ),
           end_for = new_label( "end_for", label_counter );

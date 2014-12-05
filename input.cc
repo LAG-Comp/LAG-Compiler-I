@@ -5,9 +5,11 @@ Global Array <integer> of size 8 arr2;
 
 Global Matrix <string> of size 2 by 10 mat; 
 
+
 Starting up...
 <integer> a;
-a = 10;
+Scan <integer> to a;
+Print this "Potato :" this a this "\n";
 
 Array <integer> of size 8 arr; 
 
