@@ -11,9 +11,25 @@ using namespace std;
 
 struct Type {
 	string name;
+	char level;
+	int n_dim;
+	int d1;
+	int d2;
 
-	Type() {}
-	Type( string name ) { this->name = name; }
+	Type() { 
+		this->name = "";
+		this->level = 'L';
+		this->n_dim = 0; 
+		this->d1 = 0; 
+		this->d2 = 0; 
+	}
+	Type( string name ) { 
+		this->name = name; 
+		this->level = 'L';
+		this->n_dim = 0; 
+		this->d1 = 0; 
+		this->d2 = 0;
+	}
 };
 
 struct Attribute {

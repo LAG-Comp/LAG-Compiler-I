@@ -5,7 +5,7 @@ using namespace std;
 
 const int MAX_STR = 256;
 
-symbol_table st;
+symbol_table local_st;
 symbol_table global_st;
 
 string pipeActive;
@@ -105,11 +105,11 @@ COMMANDS : COMMAND COMMANDS { $$.c = $1.c + "\n" + $2.c; }
          ;
 
 COMMAND_COMMA : CALL_FUNCTION
-        | VAR   
-        | ATR     
-        | PRINT
-        | CMD_DOWHILE
-        ;
+        	  | VAR   
+        	  | ATR     
+        	  | PRINT
+        	  | CMD_DOWHILE
+        	  ;
 
 COMMAND : CMD_IF
         | CMD_WHILE 
@@ -153,7 +153,7 @@ CMD_FOR : _FOR INDEX_FOR _FROM E _TO E _EXECUTE BLOCK
         ;
 
 INDEX_FOR : _ID
-		  { insert_var_ST( st, $1.v, Type("<integer>") );}
+		  { insert_var_ST( local_st, $1.v, Type("<integer>") );}
 		  ;
 
 CMD_SWITCH : _CASE _ID SIWTCH_BLOCK 
@@ -179,20 +179,37 @@ PARAMETERS : PARAMETER ',' PARAMETERS
 PARAMETER : E
           ;
 
-LIST_VAR : _GLOBAL TYPE _ID ';' LIST_VAR { insert_var_ST( global_st, $3.v, $2.t ); }
-    	 | _GLOBAL _ARRAY TYPE _OF_SIZE _CTE_INT _ID ';' LIST_VAR
-    	 | _GLOBAL _MATRIX TYPE _OF_SIZE _CTE_INT _BY _CTE_INT _ID ';' LIST_VAR
-         | 
+LIST_VAR : VAR_GLOBAL ';' LIST_VAR 
+         | { $$ = Attribute(); }
          ;
 
-VAR : VAR ',' _ID 			{ insert_var_ST( st, $3.v, $1.t ); }
-    | TYPE _ID 				{ insert_var_ST( st, $2.v, $1.t ); }     
-    | _GLOBAL TYPE _ID  	{ insert_var_ST( global_st, $3.v, $2.t ); }
-    | _ARRAY TYPE _OF_SIZE _CTE_INT _ID
-    | _GLOBAL _ARRAY TYPE _OF_SIZE _CTE_INT _ID
-    | _MATRIX TYPE _OF_SIZE _CTE_INT _BY _CTE_INT _ID
-    | _GLOBAL _MATRIX TYPE _OF_SIZE _CTE_INT _BY _CTE_INT _ID
+VAR_GLOBAL : VAR_GLOBAL ',' _ID { insert_var_ST( global_st, $3.v, $1.t ); }
+           | _GLOBAL TYPE _ID 	{ insert_var_ST( global_st, $3.v, $2.t ); }
+           ;
+
+VAR : VAR ',' _ID 			{ insert_var_ST( local_st, $3.v, $1.t ); }
+    | TYPE _ID 				{ insert_var_ST( local_st, $2.v, $1.t ); }
     ;
+
+TYPE : SIMPLE_TYPE
+	 | _ARRAY SIMPLE_TYPE _OF_SIZE _CTE_INT 
+	 { $$ = $2;
+	   $$.t.n_dim = 1;
+	   $$.t.d1 = toInt( $4.v ); }
+	 | _MATRIX SIMPLE_TYPE _OF_SIZE _CTE_INT _BY _CTE_INT
+	 { $$ = $2;
+	   $$.t.n_dim = 2;
+	   $$.t.d1 = toInt( $4.v );
+	   $$.t.d2 = toInt( $6.v ); }
+	 ;
+
+SIMPLE_TYPE : _INT
+     		| _CHAR
+     		| _BOOL
+     		| _DOUBLE
+     		| _FLOAT
+     		| _STRING
+     		;
 
 ATR : _ID '=' E { gen_code_attribution_without_index( &$$, $1, $3 );}
     | _ID '=' '{' PARAMETERS '}' 
@@ -227,14 +244,6 @@ SORT_PARAM : _CRESCENT
          | _DECRESCENT 
          ;
 
-TYPE : _INT
-     | _CHAR
-     | _BOOL
-     | _DOUBLE
-     | _FLOAT
-     | _STRING
-     ;
-
 E : E '+' E  { gen_code_bin_ops(&$$, $1, $2, $3); }
   | E '-' E  { gen_code_bin_ops(&$$, $1, $2, $3); }
   | E '*' E  { gen_code_bin_ops(&$$, $1, $2, $3); }
@@ -254,7 +263,7 @@ E : E '+' E  { gen_code_bin_ops(&$$, $1, $2, $3); }
   | _ID '(' E ',' E ')'   // return one element of the matrix on a given position
   | CALL_FUNCTION
   | _ID
-  { if( fetch_var_ST( st, $1.v, &$$.t ) ) 
+  { if( fetch_var_ST( local_st, $1.v, &$$.t ) || fetch_var_ST( global_st, $1.v, &$$.t ) ) 
       $$.v = $1.v; 
     else
       err( "Variable not declared: " + $1.v );
@@ -393,7 +402,7 @@ void gen_code_main( Attribute* SS, const Attribute& cmds ) {
   SS->c = "\nint main() {\n" +
            gen_temp_declaration() + 
            "\n" +
-           gen_defined_variable(st) +
+           gen_defined_variable(local_st) +
            "\n" +
            cmds.c + 
            "\treturn 0;\n" 
@@ -427,16 +436,39 @@ string gen_temp_declaration() {
 string gen_defined_variable(map<string,Type>& sim_table){
 	string c;
 	map<string,Type>::iterator it;
-
+	int array_length = 0;
 	for( it = sim_table.begin(); it != sim_table.end(); ++it ){
-		if( it->second.name == "<string>" )
-			c += "\tchar " + it->first + "[" + toStr( MAX_STR )+ "];\n";
-		else {
-			if( it->second.name == "<boolean>" )
-		    	c += "\tint " + it->first + ";\n";
-		    else
-		    	c += "\t" + type_names[it->second.name].name + " " + it->first + ";\n";
+		if(it->second.n_dim == 0){
+			if( it->second.name == "<string>" )
+				c += "\tchar " + it->first + "[" + toStr( MAX_STR )+ "];\n";
+			else {
+				if( it->second.name == "<boolean>" )
+			    	c += "\tint " + it->first + ";\n";
+			    else
+			    	c += "\t" + type_names[it->second.name].name + " " + it->first + ";\n";
+			}
 		}
+		else if(it->second.n_dim == 1){
+			if( it->second.name == "<string>" )
+				c += "\tchar " + it->first + "[" + toStr( MAX_STR * it->second.d1 )+ "];\n";
+			else {
+				if( it->second.name == "<boolean>" )
+			    	c += "\tint " + it->first + "[" + toStr( it->second.d1 ) + "];\n";
+			    else
+			    	c += "\t" + type_names[it->second.name].name + " " + it->first + "[" + toStr( it->second.d1 ) + "];\n";
+			}
+		}
+		else if(it->second.n_dim == 2){
+			if( it->second.name == "<string>" )
+				c += "\tchar " + it->first + "[" + toStr( MAX_STR * it->second.d1 * it->second.d2 )+ "];\n";
+			else {
+				if( it->second.name == "<boolean>" )
+			    	c += "\tint " + it->first + "[" + toStr( it->second.d1 * it->second.d1 ) + "];\n";
+			    else
+			    	c += "\t" + type_names[it->second.name].name + " " + it->first + "[" + toStr( it->second.d1 * it->second.d1 ) + "];\n";
+			}
+		}
+		
 	}
 
 	return c;
@@ -444,7 +476,7 @@ string gen_defined_variable(map<string,Type>& sim_table){
 
 void gen_code_attribution_without_index( Attribute* SS, Attribute& lvalue, 
                                          const Attribute& rvalue ) {
-  if( fetch_var_ST( st, lvalue.v, &lvalue.t ) ) {
+  if( fetch_var_ST( local_st, lvalue.v, &lvalue.t ) || fetch_var_ST( global_st, lvalue.v, &lvalue.t )) {
     if( lvalue.t.name == rvalue.t.name ) {
       if( lvalue.t.name == "<string>" ) {
         SS->c = lvalue.c + rvalue.c + 
@@ -485,7 +517,7 @@ void gen_var_declaration( Attribute* SS, const Attribute& typeVar, const Attribu
 }
 
 void insert_var_ST( symbol_table& sim_t, string nameVar, Type typeVar ) {
-  if( !fetch_var_ST( st, nameVar, &typeVar ) && !fetch_var_ST( global_st, nameVar, &typeVar) )
+  if( !fetch_var_ST( local_st, nameVar, &typeVar ) && !fetch_var_ST( global_st, nameVar, &typeVar) )
     sim_t[nameVar] = typeVar;
   else  
     err( "Variable already defined: " + nameVar );
@@ -516,9 +548,9 @@ Type result_type( Type a, string op, Type b )
   return operation_results[a.name + op + b.name];
 }
 
-bool fetch_var_ST( symbol_table& st, string nameVar, Type* typeVar ) {
-  if( st.find( nameVar ) != st.end() ) {
-    *typeVar = st[ nameVar ];
+bool fetch_var_ST( symbol_table& sim_t, string nameVar, Type* typeVar ) {
+  if( sim_t.find( nameVar ) != sim_t.end() ) {
+    *typeVar = sim_t[ nameVar ];
     return true;
   }
   else

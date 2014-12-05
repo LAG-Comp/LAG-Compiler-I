@@ -1,7 +1,15 @@
 Global <boolean> aba;
+
+
+Global Array <integer> of size 8 arr2;
+
+Global Matrix <string> of size 2 by 10 mat; 
+
 Starting up...
 <integer> a;
 a = 10;
+
+Array <integer> of size 8 arr; 
 
 While 5 is greater than 8 repeat{
 	a = 3;
