@@ -10,6 +10,7 @@ symbol_table temp_tbl;
 symbol_table* st = &temp_tbl;
 
 symbol_table temp_table;
+symbol_table function_return;
 map<string,string> function_header;
 map<string, symbol_table> function_st;
 map<string, symbol_table> function_parameters;
@@ -113,8 +114,9 @@ FUNCTIONS : FUNCTION FUNCTIONS { $$.c = $1.c + $2.c; }
 NAME_FUNCTION : _LOAD _ID {insert_function_st($2.v); $$.v = $2.v;}
 			  ;
 
-FUNCTION : NAME_FUNCTION ':' _INPUT PARAMETERS _OUTPUT TYPE _ID 
-		 { insert_var_ST( *st, $7.v, $6.t ); } BLOCK
+FUNCTION : NAME_FUNCTION '!' _INPUT PARAMETERS _OUTPUT TYPE _ID 
+		 { insert_var_ST( *st, $7.v, $6.t ); 
+		 	function_return[$1.v] = $6.t; } BLOCK
 		 { gen_code_function_with_return(&$$, $1, $4, $6, $7, $9); }
 
          | _LOAD _ID _INPUT PARAMETERS _OUTPUT _VOID { insert_function_st($2.v); } BLOCK
@@ -205,15 +207,17 @@ SIWTCH_BLOCK : _CASE_EQUALS F ':' BLOCK SIWTCH_BLOCK
              ;
 
 CALL_FUNCTION : _EXECUTE_FUNCTION _ID _WITH '(' ARGUMENTS ')' 
-              | _EXECUTE_FUNCTION _ID '(' ')' 
+			  { if( fetch_function_st($2.v, NULL) ){
+			  		$$.v = $2.v + "(" + $5.c + ");\n";
+			  		$$.t = function_return[$2.v];
+			  	}
+			  }
+              | _EXECUTE_FUNCTION _ID '(' ')' { $$.v = $2.v + "();\n"; $$.t = function_return[$2.v]; }
               ;
 
-ARGUMENTS : ARGUMENT ',' ARGUMENTS
-          | ARGUMENT
+ARGUMENTS : E ',' ARGUMENTS { $$.c = $1.v + $2.v + $3.v; }
+          | E 
           ;
-
-ARGUMENT : E
-         ;
 
 LIST_VAR : VAR_GLOBAL ';' LIST_VAR 
          | { $$ = Attribute(); }
@@ -271,7 +275,6 @@ PIPE_PROCESSOR : _FILTER _X E
          | _LAST_N _CTE_INT
          | _SORT '(' SORT_PARAM ')'
          | _SPLIT _ID _TO _ID _CRITERION E
-         | _MERGE _ID _WITH _ID _CRITERION E
          ;
 
 SORT_PARAM : _CRESCENT

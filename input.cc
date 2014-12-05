@@ -1,7 +1,7 @@
 
 Global Matrix <integer> of size 3 by 10 mat; 
 
-Load: MDC :
+Load: MDC !
 Input: <integer> n, <integer> m
 Output: <integer> resultado
 {
@@ -24,7 +24,7 @@ Output: <integer> resultado
 	}
 	Else
 	{
-		
+		resultado = Execute function MDC with ( a, b );
 	}
 }
 
