@@ -19,7 +19,7 @@ void gen_code_bin_ops( Attribute* SS, const Attribute& S1, const Attribute& S2, 
 void gen_code_do_while( Attribute* SS, const Attribute& cmds, const Attribute& expr );
 void gen_code_for( Attribute* SS, const Attribute& index, const Attribute& initial, const Attribute& end, const Attribute& cmds );
 void gen_code_if( Attribute *SS, const Attribute& expr, const Attribute& cmdsThen );
-void gen_code_if_else( Attribute *SS, const Attribute& expr, const Attribute& cmdsThen, const Attribute& else_ifs, const Attribute& cmdsElse );
+void gen_code_if_else( Attribute *SS, const Attribute& expr, const Attribute& cmdsThen, const Attribute& cmdsElse );
 void gen_code_main( Attribute* SS, const Attribute& cmds );
 void gen_code_print( Attribute* SS, const Attribute& cmds, const Attribute& expr );
 void gen_code_while( Attribute* SS, const Attribute& expr, const Attribute& cmds );
@@ -82,18 +82,18 @@ FUNCTIONS : FUNCTION FUNCTIONS
           | 
           ;
 
-FUNCTION : _LOAD _ID _INPUT ARGUMENTS _OUTPUT TYPE _ID BLOCK 
-         | _LOAD _ID _INPUT ARGUMENTS _OUTPUT _VOID BLOCK
+FUNCTION : _LOAD _ID _INPUT PARAMETERS _OUTPUT TYPE _ID BLOCK 
+         | _LOAD _ID _INPUT PARAMETERS _OUTPUT _VOID BLOCK
      ;
 
-ARGUMENTS : ARGUMENT ',' ARGUMENTS 
-      | ARGUMENT
+PARAMETERS : PARAMETER ',' PARAMETERS 
+      | PARAMETER
       ;
 
-ARGUMENT : TYPE _COPY _ID     
-     | TYPE _REFERENCE _ID  
-     | _VOID        
-     ;
+PARAMETER : TYPE _COPY _ID     
+     	  | TYPE _REFERENCE _ID  
+     	  | _VOID        
+     	  ;
 
 BLOCK : '{' COMMANDS '}' { $$ = $2; }
       ;
@@ -132,13 +132,9 @@ EXPR_PRINT : EXPR_PRINT _THIS E
 
 CMD_IF : _IF E _EXECUTE BLOCK 
          { gen_code_if( &$$, $2, $4 ); }
-       | _IF E _EXECUTE BLOCK ELSE_IFS _ELSE BLOCK
-         { gen_code_if_else( &$$, $2, $4, $5, $7 );}
+       | _IF E _EXECUTE BLOCK _ELSE BLOCK
+         { gen_code_if_else( &$$, $2, $4, $6 );}
        ;
-
-ELSE_IFS : _ELSE_IF E _EXECUTE BLOCK ELSE_IFS
-         | { $$ = Attribute(); }
-         ;
 
 CMD_WHILE : _WHILE E _REPEAT BLOCK
           { gen_code_while( &$$, $2, $4 ); }
@@ -164,20 +160,20 @@ SIWTCH_BLOCK : _CASE_EQUALS F ':' BLOCK SIWTCH_BLOCK
              | 
              ;
 
-CALL_FUNCTION : _EXECUTE_FUNCTION _ID _WITH '(' PARAMETERS ')' 
+CALL_FUNCTION : _EXECUTE_FUNCTION _ID _WITH '(' ARGUMENTS ')' 
               | _EXECUTE_FUNCTION _ID '(' ')' 
               ;
 
-LIST_ARRAY : '{' PARAMETERS '}' ',' LIST_ARRAY 
-         | '{' PARAMETERS '}' 
+LIST_ARRAY : '{' ARGUMENTS '}' ',' LIST_ARRAY 
+         | '{' ARGUMENTS '}' 
          ;
 
-PARAMETERS : PARAMETER ',' PARAMETERS 
-           | PARAMETER
-           ;
-
-PARAMETER : E
+ARGUMENTS : ARGUMENT ',' ARGUMENTS
+          | ARGUMENT
           ;
+
+ARGUMENT : E
+         ;
 
 LIST_VAR : VAR_GLOBAL ';' LIST_VAR 
          | { $$ = Attribute(); }
@@ -212,7 +208,7 @@ SIMPLE_TYPE : _INT
      		;
 
 ATR : _ID '=' E { gen_code_attribution_without_index( &$$, $1, $3 );}
-    | _ID '=' '{' PARAMETERS '}' 
+    | _ID '=' '{' ARGUMENTS '}' 
     | _ID '=' '{' LIST_ARRAY '}' 
     | _ID '(' E ')' '=' E      
     | _ID '(' E ',' E ')' '=' E
@@ -381,7 +377,7 @@ void gen_code_if( Attribute *SS, const Attribute& expr, const Attribute& cmdsThe
           "\t" + ifEnd + ":\n";
 }
 
-void gen_code_if_else( Attribute *SS, const Attribute& expr, const Attribute& cmdsThen, const Attribute& else_ifs, const Attribute& cmdsElse )
+void gen_code_if_else( Attribute *SS, const Attribute& expr, const Attribute& cmdsThen, const Attribute& cmdsElse )
 {
   string ifEnd = new_label("if_end", label_counter);
   string ifChainEnd = new_label("if_chain_end", label_counter);
