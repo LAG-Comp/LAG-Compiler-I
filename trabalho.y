@@ -5,11 +5,15 @@ using namespace std;
 
 const int MAX_STR = 256;
 
-symbol_table local_st;
 symbol_table global_st;
+symbol_table* st = &global_st;
+
+map<string, symbol_table> function_st;
+
 
 string pipeActive;
 
+bool fetch_function_st( string function_name, map<string,Type>* sim_t );
 bool fetch_var_ST( symbol_table& st, string nameVar, Type* typeVar );
 string gen_defined_variable(map<string,Type>& sim_table);
 string gen_temp( Type t );
@@ -31,6 +35,7 @@ void gen_code_return_array( Attribute* SS, const Attribute& var, const Attribute
 void gen_code_return_matrix( Attribute* SS, const Attribute& var, const Attribute& line,  const Attribute& column );
 void gen_var_declaration( Attribute* SS, const Attribute& typeVar, const Attribute& id );
 void insert_var_ST( symbol_table& st, string nameVar, Type typeVar );
+void insert_function_st( string function_name );
 Type result_type( Type a, string op, Type b );
 void err( string msg );
 
@@ -81,8 +86,14 @@ START : LIST_VAR FUNCTIONS MAIN
             << $1.c << $2.c << $3.c << endl; }
       ;
 
-MAIN : _STARTING_UP COMMANDS _END_OF_FILE { gen_code_main( &$$, $2 ); }
+MAIN : SIM_ST _STARTING_UP COMMANDS _END_OF_FILE { st = &function_st["main"]; gen_code_main( &$$, $3 ); }
      ;
+
+SIM_ST : 
+	   { $$ = Attribute();
+	   	 map<string,Type> temp_table;
+		 function_st["main"] = temp_table; }
+	   ;
 
 FUNCTIONS : FUNCTION FUNCTIONS { $$.c = $1.c + $2.c; }
           | { $$ = Attribute(); }
@@ -164,7 +175,7 @@ CMD_FOR : _FOR INDEX_FOR _FROM E _TO E _EXECUTE BLOCK
         ;
 
 INDEX_FOR : _ID
-		  { insert_var_ST( local_st, $1.v, Type("<integer>") );}
+		  { insert_var_ST( *st, $1.v, Type("<integer>") );}
 		  ;
 
 CMD_SWITCH : _CASE _ID SIWTCH_BLOCK 
@@ -194,8 +205,8 @@ VAR_GLOBAL : VAR_GLOBAL ',' _ID { insert_var_ST( global_st, $3.v, $1.t ); }
            | _GLOBAL TYPE _ID 	{ insert_var_ST( global_st, $3.v, $2.t ); }
            ;
 
-VAR : VAR ',' _ID 			{ insert_var_ST( local_st, $3.v, $1.t ); }
-    | TYPE _ID 				{ insert_var_ST( local_st, $2.v, $1.t ); }
+VAR : VAR ',' _ID 			{ insert_var_ST( *st, $3.v, $1.t ); }
+    | TYPE _ID 				{ insert_var_ST( *st, $2.v, $1.t ); }
     ;
 
 TYPE : SIMPLE_TYPE
@@ -268,7 +279,7 @@ E : E '+' E  { gen_code_bin_ops(&$$, $1, $2, $3); }
   | _ID '(' E ',' E ')' { gen_code_return_matrix(&$$, $1, $3, $5); }
   | CALL_FUNCTION
   | _ID
-  { if( fetch_var_ST( local_st, $1.v, &$$.t ) || fetch_var_ST( global_st, $1.v, &$$.t ) ) 
+  { if( fetch_var_ST( *st, $1.v, &$$.t ) || fetch_var_ST( global_st, $1.v, &$$.t ) ) 
       $$.v = $1.v; 
     else
       err( "Variable not declared: " + $1.v );
@@ -432,7 +443,7 @@ void gen_code_main( Attribute* SS, const Attribute& cmds ) {
   SS->c = "\nint main() {\n" +
            gen_temp_declaration() + 
            "\n" +
-           gen_defined_variable(local_st) +
+           gen_defined_variable( function_st["main"] ) +
            "\n" +
            cmds.c + 
            "\treturn 0;\n" 
@@ -505,32 +516,28 @@ string gen_defined_variable(map<string,Type>& sim_table){
 }
 
 void gen_code_return_matrix( Attribute* SS, const Attribute& var, const Attribute& line,  const Attribute& column ){
-	Type var_t; 
-	if( fetch_var_ST( local_st, var.v, &SS->t ) ){
-		var_t = local_st[var.v];
-	}
-	else if( fetch_var_ST( global_st, var.v, &SS->t ) ){
-	  	var_t = global_st[var.v];
+	
+	map<string,Type> local_st = *st;
+	if( fetch_var_ST( local_st, var.v, &SS->t ) || fetch_var_ST( global_st, var.v, &SS->t ) ){
+		if( line.t.name == "<integer>" && column.t.name == "<integer>" ){
+		  	string temp1 = gen_temp(Type("<integer>"));
+		  	string temp2 = gen_temp(Type("<integer>"));
+		  	SS->c = line.c + column.c +
+		  			"\t" + temp1 + " = " + toStr(SS->t.d2) + " * " + line.v + ";\n" +
+		  			"\t" + temp2 + " = " + temp1 + " + " + column.v + ";\n";
+		  	SS->v = var.v + "[" + temp2 + "]"; 
+		}
+		else{
+		  	err("The type of index not accepted, please choose one with type equal to <integer>");
+		}
 	}
 	else {
 	  	err( "Variable not declared: " + var.v );
-	}
-	if( line.t.name == "<integer>" && column.t.name == "<integer>" ){
-	  	string temp1 = gen_temp(Type("<integer>"));
-	  	string temp2 = gen_temp(Type("<integer>"));
-	  	SS->c = line.c + column.c +
-	  			"\t" + temp1 + " = " + toStr(var_t.d2) + " * " + line.v + ";\n" +
-	  			"\t" + temp2 + " = " + temp1 + " + " + column.v + ";\n";
-	  	SS->v = var.v + "[" + temp2 + "]"; 
-	}
-	else{
-	  	err("The type of index not accepted, please choose one with type equal to <integer>");
-	}
-      
+	}  
 }
 
 void gen_code_return_array( Attribute* SS, const Attribute& var, const Attribute& index){
-	if( fetch_var_ST( local_st, var.v, &SS->t ) || fetch_var_ST( global_st, var.v, &SS->t ) ) 
+	if( fetch_var_ST( *st, var.v, &SS->t ) || fetch_var_ST( global_st, var.v, &SS->t ) ) 
       if( index.t.name == "<integer>" ){
       	SS->c = index.c;
       	SS->v = var.v + "[" + index.v + "]"; 
@@ -547,7 +554,7 @@ void gen_code_attribution_2_index( Attribute* SS, Attribute& lvalue,
 										 const Attribute& line,
 										 const Attribute& column,
                                          const Attribute& rvalue ) {
-  	if( fetch_var_ST( local_st, lvalue.v, &lvalue.t ) || fetch_var_ST( global_st, lvalue.v, &lvalue.t )) {
+  	if( fetch_var_ST( *st, lvalue.v, &lvalue.t ) || fetch_var_ST( global_st, lvalue.v, &lvalue.t )) {
 	    if( lvalue.t.name == rvalue.t.name 
 	    	&& lvalue.t.n_dim == 2 
 	    	&& line.t.name == "<integer>"
@@ -582,7 +589,7 @@ void gen_code_attribution_2_index( Attribute* SS, Attribute& lvalue,
 void gen_code_attribution_1_index( Attribute* SS, Attribute& lvalue,
 										 const Attribute& index,
                                          const Attribute& rvalue ) {
-  if( fetch_var_ST( local_st, lvalue.v, &lvalue.t ) || fetch_var_ST( global_st, lvalue.v, &lvalue.t )) {
+  if( fetch_var_ST( *st, lvalue.v, &lvalue.t ) || fetch_var_ST( global_st, lvalue.v, &lvalue.t )) {
     if( lvalue.t.name == rvalue.t.name 
     	&& lvalue.t.n_dim == 1 
     	&& index.t.name == "<integer>" ) 
@@ -609,7 +616,7 @@ void gen_code_attribution_1_index( Attribute* SS, Attribute& lvalue,
 
 void gen_code_attribution_without_index( Attribute* SS, Attribute& lvalue,
                                          const Attribute& rvalue ) {
-  if( fetch_var_ST( local_st, lvalue.v, &lvalue.t ) || fetch_var_ST( global_st, lvalue.v, &lvalue.t )) {
+  if( fetch_var_ST( *st, lvalue.v, &lvalue.t ) || fetch_var_ST( global_st, lvalue.v, &lvalue.t )) {
     if( lvalue.t.name == rvalue.t.name ) {
       if( lvalue.t.name == "<string>" ) {
         SS->c = lvalue.c + rvalue.c + 
@@ -650,10 +657,40 @@ void gen_var_declaration( Attribute* SS, const Attribute& typeVar, const Attribu
 }
 
 void insert_var_ST( symbol_table& sim_t, string nameVar, Type typeVar ) {
-  if( !fetch_var_ST( local_st, nameVar, &typeVar ) && !fetch_var_ST( global_st, nameVar, &typeVar) )
-    sim_t[nameVar] = typeVar;
-  else  
-    err( "Variable already defined: " + nameVar );
+  if( !fetch_function_st(nameVar, NULL) ){
+  	if( !fetch_var_ST( *st, nameVar, &typeVar ) && !fetch_var_ST( global_st, nameVar, &typeVar) )
+	    sim_t[nameVar] = typeVar;
+	else  
+	    err( "Variable already defined: " + nameVar );
+  }
+  else{
+  	err("The "+ nameVar + " is a function");
+  }
+}
+
+void insert_function_st( string function_name ){
+	Type t;
+	map<string,Type> sim_t;
+	if( !fetch_var_ST( *st, function_name, &t ) && !fetch_var_ST( global_st, function_name, &t) ){
+		if( !fetch_function_st( function_name, NULL ) ){
+			function_st[function_name] = sim_t;
+		}
+		else{
+			err("Function already defined: " + function_name);
+		}
+	}
+	else{
+		err("The " + function_name + " is a variable");
+	}
+}
+
+bool fetch_function_st( string function_name, map<string,Type>* sim_t ){
+	if( function_st.find( function_name ) != function_st.end() ) {
+	    if( sim_t != NULL ) *sim_t = function_st[ function_name ];
+	    return true;
+	}
+	else
+	    return false;
 }
 
 void gen_code_bin_ops( Attribute* SS, const Attribute& S1, const Attribute& S2, const Attribute& S3 )
