@@ -23,6 +23,7 @@ void gen_code_for( Attribute* SS, const Attribute& index, const Attribute& initi
 void gen_code_if( Attribute *SS, const Attribute& expr, const Attribute& cmdsThen );
 void gen_code_if_else( Attribute *SS, const Attribute& expr, const Attribute& cmdsThen, const Attribute& cmdsElse );
 void gen_code_main( Attribute* SS, const Attribute& cmds );
+void gen_code_not( Attribute* SS, const Attribute& value);
 void gen_code_print( Attribute* SS, const Attribute& cmds, const Attribute& expr );
 void gen_code_scan( Attribute* SS, const Attribute& var_type, const Attribute& var_name );
 void gen_code_while( Attribute* SS, const Attribute& expr, const Attribute& cmds );
@@ -83,21 +84,20 @@ START : LIST_VAR FUNCTIONS MAIN
 MAIN : _STARTING_UP COMMANDS _END_OF_FILE { gen_code_main( &$$, $2 ); }
      ;
 
-FUNCTIONS : FUNCTION FUNCTIONS 
-          | 
+FUNCTIONS : FUNCTION FUNCTIONS { $$.c = $1.c + $2.c; }
+          | { $$ = Attribute(); }
           ;
 
 FUNCTION : _LOAD _ID _INPUT PARAMETERS _OUTPUT TYPE _ID BLOCK 
          | _LOAD _ID _INPUT PARAMETERS _OUTPUT _VOID BLOCK
-     ;
+     	 ;
 
 PARAMETERS : PARAMETER ',' PARAMETERS 
-      | PARAMETER
-      ;
+      	   | PARAMETER
+      	   ;
 
-PARAMETER : TYPE _COPY _ID     
-       	  | TYPE _REFERENCE _ID  
-       	  | _VOID        
+PARAMETER : TYPE _ID
+       	  | _VOID
        	  ;
 
 BLOCK : '{' COMMANDS '}' { $$ = $2; }
@@ -106,7 +106,7 @@ BLOCK : '{' COMMANDS '}' { $$ = $2; }
 COMMANDS : COMMAND COMMANDS { $$.c = $1.c + "\n" + $2.c; }
          | PIPE ';' COMMANDS { $$.c = $1.c + "\n" + $3.c; }
          | COMMAND_COMMA ';' COMMANDS { $$.c = $1.c + "\n" + $3.c; }
-         | {$$.c = "";}
+         | { $$ = Attribute(); }
          ;
 
 COMMAND_COMMA : CALL_FUNCTION
@@ -124,15 +124,15 @@ COMMAND : CMD_IF
         ;
 
 COMMAND_TO_PIPE : COMMAND
-        | COMMAND_COMMA
-        ;
+        		| COMMAND_COMMA
+        		;
 
 PRINT : _PRINT EXPR_PRINT
-    { $$ = $2; }
+      { $$ = $2; }
       ;
 
 EXPR_PRINT : EXPR_PRINT _THIS E
-      { gen_code_print( &$$, $1, $3 ); }
+       { gen_code_print( &$$, $1, $3 ); }
        | { $$ = Attribute(); }
        ;
 
@@ -172,16 +172,12 @@ CMD_SWITCH : _CASE _ID SIWTCH_BLOCK
 
 SIWTCH_BLOCK : _CASE_EQUALS F ':' BLOCK SIWTCH_BLOCK 
              | _CASE_NOT ':' BLOCK           
-             | 
+             | { $$ = Attribute(); }
              ;
 
 CALL_FUNCTION : _EXECUTE_FUNCTION _ID _WITH '(' ARGUMENTS ')' 
               | _EXECUTE_FUNCTION _ID '(' ')' 
               ;
-
-LIST_ARRAY : '{' ARGUMENTS '}' ',' LIST_ARRAY 
-         | '{' ARGUMENTS '}' 
-         ;
 
 ARGUMENTS : ARGUMENT ',' ARGUMENTS
           | ARGUMENT
@@ -223,8 +219,6 @@ SIMPLE_TYPE : _INT
      		;
 
 ATR : _ID '=' E { gen_code_attribution_without_index( &$$, $1, $3 );}
-    | _ID '=' '{' ARGUMENTS '}' 
-    | _ID '=' '{' LIST_ARRAY '}' 
     | _ID '(' E ')' '=' E 		{ gen_code_attribution_1_index( &$$, $1, $3, $6 ); }
     | _ID '(' E ',' E ')' '=' E { gen_code_attribution_2_index( &$$, $1, $3, $5, $8 ); }
     ;
@@ -233,15 +227,15 @@ PIPE : '[' PIPE_SOURCE '|' PIPE_PROCESSORS '|' PIPE_CONSUMER ']'
      ;
 
 PIPE_SOURCE : _ID
-      | _INTERVAL_FROM _CTE_INT _TO _CTE_INT
-      ;
+      		| _INTERVAL_FROM _CTE_INT _TO _CTE_INT
+      		;
 
 PIPE_CONSUMER : _FOR_EACH _X '(' COMMAND_TO_PIPE ')'
-        ;
+        	  ;
 
 PIPE_PROCESSORS : PIPE_PROCESSORS '|' PIPE_PROCESSOR
-          | PIPE_PROCESSOR
-          ;
+          		| PIPE_PROCESSOR
+          		;
 
 PIPE_PROCESSOR : _FILTER _X E
          | _FIRST_N _CTE_INT
@@ -269,7 +263,7 @@ E : E '+' E  { gen_code_bin_ops(&$$, $1, $2, $3); }
   | E _LT E  { gen_code_bin_ops(&$$, $1, $2, $3); }
   | E _LE E  { gen_code_bin_ops(&$$, $1, $2, $3); }
   | '(' E ')' { $$ = $2; }
-  | _NOT E   
+  | _NOT E   { gen_code_not(&$$, $2); }
   | _ID '(' E ')' 		{ gen_code_return_array(&$$, $1, $3); }
   | _ID '(' E ',' E ')' { gen_code_return_matrix(&$$, $1, $3, $5); }
   | CALL_FUNCTION
@@ -302,6 +296,19 @@ map<string,string> c_op;
 map<string,Type> type_names;
 
 #include "lex.yy.c"
+
+void gen_code_not( Attribute* SS, const Attribute& value){
+	if( value.t.name == "<boolean>" ){
+		string temp1 = gen_temp(Type("<boolean>"));
+		SS->c = value.c + 
+				"\t" + temp1 + " = !" + value.v + ";\n";
+		SS->v = temp1;
+		SS->t = Type("<boolean>");
+	}
+	else{
+		err("The type of expression is not a boolean!");
+	}
+}
 
 void gen_code_print( Attribute* SS, const Attribute& cmds, const Attribute& expr ){
 
@@ -655,15 +662,15 @@ void gen_code_bin_ops( Attribute* SS, const Attribute& S1, const Attribute& S2, 
   SS->v = gen_temp( SS->t );
 
   if( SS->t.name == "<string>" ){
-    "\n  strncpy( " + SS->v + ", " + S1.v + ", " + 
+    "\n\tstrncpy( " + SS->v + ", " + S1.v + ", " + 
                         toStr( MAX_STR - 1 ) + " );\n" +
-            "  strncat( " + SS->v + ", " + S3.v + ", " + 
+            "\tstrncat( " + SS->v + ", " + S3.v + ", " + 
                         toStr( MAX_STR - 1 ) + " );\n" +
-            "  " + SS->v + "[" + toStr( MAX_STR - 1 ) + "] = 0;\n\n";    
+            "\t" + SS->v + "[" + toStr( MAX_STR - 1 ) + "] = 0;\n\n";    
   }
   else
     SS->c = S1.c + S3.c + 
-            "  " + SS->v + " = " + S1.v + " " + c_op[S2.v] + " " + S3.v + ";\n";
+            "\t" + SS->v + " = " + S1.v + " " + c_op[S2.v] + " " + S3.v + ";\n";
 }
 
 Type result_type( Type a, string op, Type b )
