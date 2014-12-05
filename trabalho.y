@@ -6,9 +6,13 @@ using namespace std;
 const int MAX_STR = 256;
 
 symbol_table global_st;
-symbol_table* st = &global_st;
+symbol_table temp_tbl;
+symbol_table* st = &temp_tbl;
 
+symbol_table temp_table;
+map<string,string> function_header;
 map<string, symbol_table> function_st;
+map<string, symbol_table> function_parameters;
 
 
 string pipeActive;
@@ -16,18 +20,24 @@ string pipeActive;
 bool fetch_function_st( string function_name, map<string,Type>* sim_t );
 bool fetch_var_ST( symbol_table& st, string nameVar, Type* typeVar );
 string gen_defined_variable(map<string,Type>& sim_table);
+string gen_function_header();
 string gen_temp( Type t );
 string gen_temp_declaration();
+void add_function_header( Attribute* SS, const Attribute function_name );
 void gen_code_attribution_without_index( Attribute* SS, Attribute& lvalue, const Attribute& rvalue );
 void gen_code_attribution_1_index( Attribute* SS, Attribute& lvalue, const Attribute& index, const Attribute& rvalue );
 void gen_code_attribution_2_index( Attribute* SS, Attribute& lvalue, const Attribute& line, const Attribute& column, const Attribute& rvalue );
 void gen_code_bin_ops( Attribute* SS, const Attribute& S1, const Attribute& S2, const Attribute& S3 );
 void gen_code_do_while( Attribute* SS, const Attribute& cmds, const Attribute& expr );
 void gen_code_for( Attribute* SS, const Attribute& index, const Attribute& initial, const Attribute& end, const Attribute& cmds );
+void gen_code_function_with_return( Attribute* SS, const Attribute function_name, const Attribute param, const Attribute type_output, const Attribute output_name, const Attribute block );
+void gen_code_function_without_return( Attribute* SS, const Attribute function_name, const Attribute param, const Attribute block );
 void gen_code_if( Attribute *SS, const Attribute& expr, const Attribute& cmdsThen );
 void gen_code_if_else( Attribute *SS, const Attribute& expr, const Attribute& cmdsThen, const Attribute& cmdsElse );
 void gen_code_main( Attribute* SS, const Attribute& cmds );
 void gen_code_not( Attribute* SS, const Attribute& value);
+void gen_code_parameter( Attribute* SS, const Attribute var_type, const Attribute var_name);
+void gen_code_parameters( Attribute* SS, const Attribute param, const Attribute params);
 void gen_code_print( Attribute* SS, const Attribute& cmds, const Attribute& expr );
 void gen_code_scan( Attribute* SS, const Attribute& var_type, const Attribute& var_name );
 void gen_code_while( Attribute* SS, const Attribute& expr, const Attribute& cmds );
@@ -36,6 +46,7 @@ void gen_code_return_matrix( Attribute* SS, const Attribute& var, const Attribut
 void gen_var_declaration( Attribute* SS, const Attribute& typeVar, const Attribute& id );
 void insert_var_ST( symbol_table& st, string nameVar, Type typeVar );
 void insert_function_st( string function_name );
+void remove_temporary_vars();
 Type result_type( Type a, string op, Type b );
 void err( string msg );
 
@@ -83,32 +94,39 @@ START : LIST_VAR FUNCTIONS MAIN
                "#include <stdlib.h>\n"
                "#include <string.h>\n\n"
             << gen_defined_variable( global_st )
+            << gen_function_header()
             << $1.c << $2.c << $3.c << endl; }
       ;
 
-MAIN : SIM_ST _STARTING_UP COMMANDS _END_OF_FILE { st = &function_st["main"]; gen_code_main( &$$, $3 ); }
+MAIN : SIM_ST _STARTING_UP COMMANDS _END_OF_FILE { fetch_function_st("main", st); gen_code_main( &$$, $3 ); }
      ;
 
 SIM_ST : 
 	   { $$ = Attribute();
-	   	 map<string,Type> temp_table;
-		 function_st["main"] = temp_table; }
+	   	 insert_function_st("main"); }
 	   ;
 
 FUNCTIONS : FUNCTION FUNCTIONS { $$.c = $1.c + $2.c; }
           | { $$ = Attribute(); }
           ;
 
-FUNCTION : _LOAD _ID _INPUT PARAMETERS _OUTPUT TYPE _ID BLOCK 
-         | _LOAD _ID _INPUT PARAMETERS _OUTPUT _VOID BLOCK
+NAME_FUNCTION : _LOAD _ID {insert_function_st($2.v); $$.v = $2.v;}
+			  ;
+
+FUNCTION : NAME_FUNCTION ':' _INPUT PARAMETERS _OUTPUT TYPE _ID 
+		 { insert_var_ST( *st, $7.v, $6.t ); } BLOCK
+		 { gen_code_function_with_return(&$$, $1, $4, $6, $7, $9); }
+
+         | _LOAD _ID _INPUT PARAMETERS _OUTPUT _VOID { insert_function_st($2.v); } BLOCK
+         { gen_code_function_without_return(&$$, $2, $4, $8); }
      	 ;
 
-PARAMETERS : PARAMETER ',' PARAMETERS 
+PARAMETERS : PARAMETER ',' PARAMETERS { gen_code_parameters(&$$, $1, $3); }
       	   | PARAMETER
       	   ;
 
-PARAMETER : TYPE _ID
-       	  | _VOID
+PARAMETER : TYPE _ID { gen_code_parameter(&$$, $1, $2); }
+       	  | _VOID { $$.c = ""; }
        	  ;
 
 BLOCK : '{' COMMANDS '}' { $$ = $2; }
@@ -308,6 +326,93 @@ map<string,Type> type_names;
 
 #include "lex.yy.c"
 
+string gen_function_header(){
+	string c;
+	for( map<string,string>::iterator it = function_header.begin(); it != function_header.end(); ++it){
+		c += it->second + ";\n";
+	}
+	return c;
+}
+
+void remove_temporary_vars(){
+	if( temp_table.size() > 0 ){
+		for (map<string, Type>::iterator i = temp_table.begin(); i != temp_table.end(); ++i)
+		{
+			st->erase( st->find( i->first ) );
+
+		}
+		temp_table.clear();
+	}
+}
+
+void gen_code_parameter( Attribute* SS, const Attribute var_type, const Attribute var_name){
+	string t = "void";
+	if( var_type.t.name == "<boolean>" ){
+		t = "int";
+	}
+	else if( var_type.t.name == "<string>" ){
+		t = "char["+ toStr(MAX_STR) +"]";
+	}
+	else{
+		t = type_names[var_type.t.name].name;
+	}
+
+	SS->c = t + " " + var_name.v;
+	SS->v = var_name.v;
+	SS->t = var_type.t;
+	insert_var_ST( temp_table, var_name.v, var_type.t);
+	insert_var_ST( *st, var_name.v, var_type.t);
+}
+
+void gen_code_parameters( Attribute* SS, const Attribute param, const Attribute params){
+	if( params.c == ""){
+		SS->c = param.c;
+	}
+	else{
+		SS->c = param.c + ", " + params.c;
+	}
+}
+
+void gen_code_function_without_return( 	Attribute* SS, 
+										const Attribute function_name, 
+										const Attribute param, 
+										const Attribute block ){
+	remove_temporary_vars();
+	function_header[function_name.v] = "void " + function_name.v + "(" + param.c + ")";
+	SS->c = "\n\n" + function_header[function_name.v] + "{\n" +
+			gen_defined_variable( *st ) +
+			block.c +
+			"}\n\n";
+}
+
+void gen_code_function_with_return( Attribute* SS, 
+									const Attribute function_name, 
+									const Attribute param, 
+									const Attribute type_output, 
+									const Attribute output_name, 
+									const Attribute block ){
+	string t = "void";
+	if( type_output.t.name == "<boolean>" )
+		t = "int";
+	else if(type_output.t.name == "<string>"){
+		t = "char";
+	}
+	else if( type_output.t.name == ""){
+		t = "void";
+	}
+	else{
+		t = type_names[type_output.t.name].name;
+	}
+	remove_temporary_vars();
+	function_header[function_name.v] = t + " " + function_name.v + "(" + param.c + ")";
+
+	SS->c = "\n\n" + function_header[function_name.v] + "{\n" +
+			gen_defined_variable( *st ) +
+			block.c +
+			"\treturn " + output_name.v + ";\n" +
+			"}\n\n";
+}
+
 void gen_code_not( Attribute* SS, const Attribute& value){
 	if( value.t.name == "<boolean>" ){
 		string temp1 = gen_temp(Type("<boolean>"));
@@ -443,7 +548,7 @@ void gen_code_main( Attribute* SS, const Attribute& cmds ) {
   SS->c = "\nint main() {\n" +
            gen_temp_declaration() + 
            "\n" +
-           gen_defined_variable( function_st["main"] ) +
+           gen_defined_variable( *st ) +
            "\n" +
            cmds.c + 
            "\treturn 0;\n" 
@@ -674,6 +779,7 @@ void insert_function_st( string function_name ){
 	if( !fetch_var_ST( *st, function_name, &t ) && !fetch_var_ST( global_st, function_name, &t) ){
 		if( !fetch_function_st( function_name, NULL ) ){
 			function_st[function_name] = sim_t;
+			st = &function_st[function_name];
 		}
 		else{
 			err("Function already defined: " + function_name);

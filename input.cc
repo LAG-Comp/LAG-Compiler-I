@@ -1,6 +1,32 @@
 
 Global Matrix <integer> of size 3 by 10 mat; 
 
+Load: MDC :
+Input: <integer> n, <integer> m
+Output: <integer> resultado
+{
+	<integer> a;
+	<integer> b;
+	If n is greater than m execute
+	{
+		a = n;
+		b = m;
+	}
+	Else 
+	{
+		a = m;
+		b = n;
+	}
+
+	If b is equal to 0 execute
+	{
+		resultado = m;
+	}
+	Else
+	{
+		
+	}
+}
 
 Starting up...
 
