@@ -7,12 +7,15 @@ const int MAX_STR = 256;
 
 symbol_table global_st;
 symbol_table temp_tbl;
+var_temp_table tep;
 symbol_table* st = &temp_tbl;
+var_temp_table* st_temp = &tep;
 
 symbol_table temp_table;
 symbol_table function_return;
 map<string,string> function_header;
 map<string, symbol_table> function_st;
+map<string, var_temp_table> function_temps;
 map<string, symbol_table> function_parameters;
 
 
@@ -278,7 +281,7 @@ PIPE_PROCESSOR : _FILTER _X E
          ;
 
 SORT_PARAM : _CRESCENT
-         | _DECRESCENT 
+         | _DECRESCENT
          ;
 
 E : E '+' E  { gen_code_bin_ops(&$$, $1, $2, $3); }
@@ -342,7 +345,6 @@ void remove_temporary_vars(){
 		for (map<string, Type>::iterator i = temp_table.begin(); i != temp_table.end(); ++i)
 		{
 			st->erase( st->find( i->first ) );
-
 		}
 		temp_table.clear();
 	}
@@ -779,10 +781,13 @@ void insert_var_ST( symbol_table& sim_t, string nameVar, Type typeVar ) {
 void insert_function_st( string function_name ){
 	Type t;
 	map<string,Type> sim_t;
+	map<string, int> sim_t2;
 	if( !fetch_var_ST( *st, function_name, &t ) && !fetch_var_ST( global_st, function_name, &t) ){
 		if( !fetch_function_st( function_name, NULL ) ){
 			function_st[function_name] = sim_t;
+			function_temps[function_name] = sim_t2;
 			st = &function_st[function_name];
+			st_temp = &function_temps[function_name];
 		}
 		else{
 			err("Function already defined: " + function_name);

@@ -47,6 +47,7 @@ struct Attribute {
 };
 
 typedef map<string,Type> symbol_table;
+typedef map<string,int> var_temp_table;
 
 bool is_number(const std::string& s);
 string toStr( int n );

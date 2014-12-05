@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-	int mat[30];
 int MDC(int n, int m);
 
 
@@ -35,7 +34,10 @@ int MDC(int n, int m){
 
 
 	L_if_end_2:
-	
+		resultado = MDC(a,b);
+;
+
+
 	L_if_chain_end_2:
 
 	return resultado;
@@ -45,31 +47,26 @@ int MDC(int n, int m){
 int main() {
 	int temp_bool_1;
 	int temp_bool_2;
-	int temp_bool_3;
-	int temp_bool_4;
-	int temp_int_1;
-	int temp_int_2;
-	int temp_int_3;
-	int temp_int_4;
 
 	int a;
-	int ghf;
+	int b;
+	int res;
 
 
-	temp_bool_3 = 4 < 6;
-	temp_bool_4 = !temp_bool_3;
-	ghf = temp_bool_4;
 
 
-	a = 1;
+	printf( "%s" , "Digite dois inteiros, por favor: \n" );
 
-	temp_int_1 = a * 10;
-	temp_int_2 = temp_int_1 + 3;
-	mat[temp_int_2] = 5;
+	scanf( "%d" , &a );
 
-	temp_int_3 = 10 * 2;
-	temp_int_4 = temp_int_3 + 3;
-	a = mat[temp_int_4];
+	scanf( "%d" , &b );
+
+	res = MDC(a,b);
+;
+
+	printf( "%s" , "MDC entre os dois: " );
+	printf( "%d" , res );
+	printf( "%s" , "\n" );
 
 	return 0;
 }

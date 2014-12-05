@@ -28,8 +28,8 @@ string new_label( string cmd, map<string,int> &label_counter )
 
 void init_c_operands_table(map<string,string> &c_op)
 {
-	c_op["+"] = "-";
-	c_op["-"] = "+";
+	c_op["+"] = "+";
+	c_op["-"] = "-";
 	c_op["*"] = "*";
 	c_op["/"] = "/";
 	c_op["modulo"] = "%%";
