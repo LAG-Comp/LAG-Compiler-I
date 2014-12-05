@@ -3,14 +3,16 @@
 #include <string.h>
 
 	int aba;
-	int arr2[8];
-	char mat[5120];
+	int arr2[100];
+	int mat[30];
 
 int main() {
 	int temp_bool_1;
 	int temp_bool_2;
 	int temp_bool_3;
 	int temp_bool_4;
+	int temp_int_1;
+	int temp_int_2;
 
 	int a;
 	int arr[8];
@@ -18,26 +20,32 @@ int main() {
 	int i;
 
 
-  a = 10;
+	a = 1;
+
+	temp_int_1 = a * 10;
+	temp_int_2 = temp_int_1 + 3;
+	mat[temp_int_2] = 5;
+
+	arr2[a] = 234;
 
 
   temp_bool_1 = 5 > 8;
 	temp_bool_1= !temp_bool_1;
 	if( temp_bool_1 ) goto L_while_end_1;
-	  a = 3;
+		a = 3;
 
 
 L_while_end_1:
 
 L_do_while_begin_1:
-	  a = 2;
+		a = 2;
 
 
 	  temp_bool_2 = 4 < 7;
 	if( temp_bool_2 ) goto L_do_while_begin_1;
 
 
-  b = 15;
+	b = 15;
 
   temp_bool_3 = a < b;
 	temp_bool_3= !temp_bool_3;

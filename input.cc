@@ -1,13 +1,16 @@
 Global <boolean> aba;
 
 
-Global Array <integer> of size 8 arr2;
+Global Array <integer> of size 100 arr2;
 
-Global Matrix <string> of size 2 by 10 mat; 
+Global Matrix <integer> of size 3 by 10 mat; 
 
 Starting up...
 <integer> a;
-a = 10;
+a = 1;
+mat(a,3) = 5;
+
+arr2(a) = 234;
 
 Array <integer> of size 8 arr; 
 

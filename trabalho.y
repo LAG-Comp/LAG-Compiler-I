@@ -15,6 +15,8 @@ string gen_defined_variable(map<string,Type>& sim_table);
 string gen_temp( Type t );
 string gen_temp_declaration();
 void gen_code_attribution_without_index( Attribute* SS, Attribute& lvalue, const Attribute& rvalue );
+void gen_code_attribution_1_index( Attribute* SS, Attribute& lvalue, const Attribute& index, const Attribute& rvalue );
+void gen_code_attribution_2_index( Attribute* SS, Attribute& lvalue, const Attribute& line, const Attribute& column, const Attribute& rvalue );
 void gen_code_bin_ops( Attribute* SS, const Attribute& S1, const Attribute& S2, const Attribute& S3 );
 void gen_code_do_while( Attribute* SS, const Attribute& cmds, const Attribute& expr );
 void gen_code_for( Attribute* SS, const Attribute& index, const Attribute& initial, const Attribute& end, const Attribute& cmds );
@@ -210,8 +212,8 @@ SIMPLE_TYPE : _INT
 ATR : _ID '=' E { gen_code_attribution_without_index( &$$, $1, $3 );}
     | _ID '=' '{' ARGUMENTS '}' 
     | _ID '=' '{' LIST_ARRAY '}' 
-    | _ID '(' E ')' '=' E      
-    | _ID '(' E ',' E ')' '=' E
+    | _ID '(' E ')' '=' E 		{ gen_code_attribution_1_index( &$$, $1, $3, $6 ); }
+    | _ID '(' E ',' E ')' '=' E { gen_code_attribution_2_index( &$$, $1, $3, $5, $8 ); }
     ;
 
 PIPE : '[' PIPE_SOURCE '|' PIPE_PROCESSORS '|' PIPE_CONSUMER ']'
@@ -461,7 +463,7 @@ string gen_defined_variable(map<string,Type>& sim_table){
 				if( it->second.name == "<boolean>" )
 			    	c += "\tint " + it->first + "[" + toStr( it->second.d1 * it->second.d1 ) + "];\n";
 			    else
-			    	c += "\t" + type_names[it->second.name].name + " " + it->first + "[" + toStr( it->second.d1 * it->second.d1 ) + "];\n";
+			    	c += "\t" + type_names[it->second.name].name + " " + it->first + "[" + toStr( it->second.d1 * it->second.d2 ) + "];\n";
 			}
 		}
 		
@@ -470,19 +472,83 @@ string gen_defined_variable(map<string,Type>& sim_table){
 	return c;
 }
 
-void gen_code_attribution_without_index( Attribute* SS, Attribute& lvalue, 
+void gen_code_attribution_2_index( Attribute* SS, Attribute& lvalue,
+										 const Attribute& line,
+										 const Attribute& column,
+                                         const Attribute& rvalue ) {
+  	if( fetch_var_ST( local_st, lvalue.v, &lvalue.t ) || fetch_var_ST( global_st, lvalue.v, &lvalue.t )) {
+	    if( lvalue.t.name == rvalue.t.name 
+	    	&& lvalue.t.n_dim == 2 
+	    	&& line.t.name == "<integer>"
+	    	&& column.t.name == "<integer>" ) 
+	    {
+	      	if( lvalue.t.name == "<string>" ) { // ainda não funciona, não sei como fazer sem usar ponteiros;
+	        	//SS->c = lvalue.c + rvalue.c + 
+	        	//		"" +
+	        	//        "\tstrncpy( " + lvalue.v + "[" + line.v + "], " + rvalue.v + ", " + 
+	        	//                    toStr( MAX_STR - 1 ) + " );\n" +
+	        	//        "\t" + lvalue.v + "[" + toStr( MAX_STR*lvalue.t.d1 - 1 ) + "] = 0;\n";
+	      	}
+	      	else{
+	      		string temp1 = gen_temp( Type("<integer>") );
+	      		string temp2 = gen_temp( Type("<integer>") );
+
+	        	SS->c = lvalue.c + rvalue.c +
+	        		"\t" + temp1 + " = " + line.v + " * " + toStr(lvalue.t.d2) + ";\n" +
+	        		"\t" + temp2 + " = " + temp1 + " + " + column.v + ";\n" +
+	                "\t" + lvalue.v + "[" + temp2 + "] = " + rvalue.v + ";\n"; 
+	    	}
+	    }
+	    else
+	      err( "Expression " + rvalue.t.name + 
+	            " can be attributed to variable " +
+	            lvalue.t.name );
+    } 
+    else
+      err( "Variable not declared: " + lvalue.v );
+}
+
+void gen_code_attribution_1_index( Attribute* SS, Attribute& lvalue,
+										 const Attribute& index,
+                                         const Attribute& rvalue ) {
+  if( fetch_var_ST( local_st, lvalue.v, &lvalue.t ) || fetch_var_ST( global_st, lvalue.v, &lvalue.t )) {
+    if( lvalue.t.name == rvalue.t.name 
+    	&& lvalue.t.n_dim == 1 
+    	&& index.t.name == "<integer>" ) 
+    {
+      if( lvalue.t.name == "<string>" ) { // ainda não funciona, não sei como fazer sem usar ponteiros;
+        //SS->c = lvalue.c + rvalue.c + 
+        //		"" +
+        //        "\tstrncpy( " + lvalue.v + "[" + index.v + "], " + rvalue.v + ", " + 
+        //                    toStr( MAX_STR - 1 ) + " );\n" +
+        //        "\t" + lvalue.v + "[" + toStr( MAX_STR*lvalue.t.d1 - 1 ) + "] = 0;\n";
+      }
+      else
+        SS->c = lvalue.c + rvalue.c + 
+                "\t" + lvalue.v + "[" + index.v + "] = " + rvalue.v + ";\n"; 
+    }
+    else
+      err( "Expression " + rvalue.t.name + 
+            " can be attributed to variable " +
+            lvalue.t.name );
+    } 
+    else
+      err( "Variable not declared: " + lvalue.v );
+}
+
+void gen_code_attribution_without_index( Attribute* SS, Attribute& lvalue,
                                          const Attribute& rvalue ) {
   if( fetch_var_ST( local_st, lvalue.v, &lvalue.t ) || fetch_var_ST( global_st, lvalue.v, &lvalue.t )) {
     if( lvalue.t.name == rvalue.t.name ) {
       if( lvalue.t.name == "<string>" ) {
         SS->c = lvalue.c + rvalue.c + 
-                "  strncpy( " + lvalue.v + ", " + rvalue.v + ", " + 
+                "\tstrncpy( " + lvalue.v + ", " + rvalue.v + ", " + 
                             toStr( MAX_STR - 1 ) + " );\n" +
-                "  " + lvalue.v + "[" + toStr( MAX_STR - 1 ) + "] = 0;\n";
+                "\t" + lvalue.v + "[" + toStr( MAX_STR - 1 ) + "] = 0;\n";
       }
       else
         SS->c = lvalue.c + rvalue.c + 
-                "  " + lvalue.v + " = " + rvalue.v + ";\n"; 
+                "\t" + lvalue.v + " = " + rvalue.v + ";\n"; 
     }
     else
       err( "Expression " + rvalue.t.name + 
@@ -566,7 +632,7 @@ void err( string msg )
 }
 
 string gen_temp( Type t ) {
-  return "temp_" + type_names[t.name].name + "_" + toStr( ++n_var_temp[type_names[t.name].name] );
+	return "temp_" + type_names[t.name].name + "_" + toStr( ++n_var_temp[type_names[t.name].name] );
 }
 
 int main(int argc, char **argv){
