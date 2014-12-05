@@ -26,6 +26,8 @@ void gen_code_main( Attribute* SS, const Attribute& cmds );
 void gen_code_print( Attribute* SS, const Attribute& cmds, const Attribute& expr );
 void gen_code_scan( Attribute* SS, const Attribute& var_type, const Attribute& var_name );
 void gen_code_while( Attribute* SS, const Attribute& expr, const Attribute& cmds );
+void gen_code_return_array( Attribute* SS, const Attribute& var, const Attribute& index);
+void gen_code_return_matrix( Attribute* SS, const Attribute& var, const Attribute& line,  const Attribute& column );
 void gen_var_declaration( Attribute* SS, const Attribute& typeVar, const Attribute& id );
 void insert_var_ST( symbol_table& st, string nameVar, Type typeVar );
 Type result_type( Type a, string op, Type b );
@@ -268,8 +270,8 @@ E : E '+' E  { gen_code_bin_ops(&$$, $1, $2, $3); }
   | E _LE E  { gen_code_bin_ops(&$$, $1, $2, $3); }
   | '(' E ')' { $$ = $2; }
   | _NOT E   
-  | _ID '(' E ')'     // return one element of the array on a given position
-  | _ID '(' E ',' E ')'   // return one element of the matrix on a given position
+  | _ID '(' E ')' 		{ gen_code_return_array(&$$, $1, $3); }
+  | _ID '(' E ',' E ')' { gen_code_return_matrix(&$$, $1, $3, $5); }
   | CALL_FUNCTION
   | _ID
   { if( fetch_var_ST( local_st, $1.v, &$$.t ) || fetch_var_ST( global_st, $1.v, &$$.t ) ) 
@@ -493,6 +495,45 @@ string gen_defined_variable(map<string,Type>& sim_table){
 	}
 
 	return c;
+}
+
+void gen_code_return_matrix( Attribute* SS, const Attribute& var, const Attribute& line,  const Attribute& column ){
+	Type var_t; 
+	if( fetch_var_ST( local_st, var.v, &SS->t ) ){
+		var_t = local_st[var.v];
+	}
+	else if( fetch_var_ST( global_st, var.v, &SS->t ) ){
+	  	var_t = global_st[var.v];
+	}
+	else {
+	  	err( "Variable not declared: " + var.v );
+	}
+	if( line.t.name == "<integer>" && column.t.name == "<integer>" ){
+	  	string temp1 = gen_temp(Type("<integer>"));
+	  	string temp2 = gen_temp(Type("<integer>"));
+	  	SS->c = line.c + column.c +
+	  			"\t" + temp1 + " = " + toStr(var_t.d2) + " * " + line.v + ";\n" +
+	  			"\t" + temp2 + " = " + temp1 + " + " + column.v + ";\n";
+	  	SS->v = var.v + "[" + temp2 + "]"; 
+	}
+	else{
+	  	err("The type of index not accepted, please choose one with type equal to <integer>");
+	}
+      
+}
+
+void gen_code_return_array( Attribute* SS, const Attribute& var, const Attribute& index){
+	if( fetch_var_ST( local_st, var.v, &SS->t ) || fetch_var_ST( global_st, var.v, &SS->t ) ) 
+      if( index.t.name == "<integer>" ){
+      	SS->c = index.c;
+      	SS->v = var.v + "[" + index.v + "]"; 
+      }
+      else{
+      	err("Type of index not accepted, please choose one with type equal to <integer>");
+      }
+
+    else
+      err( "Variable not declared: " + var.v );
 }
 
 void gen_code_attribution_2_index( Attribute* SS, Attribute& lvalue,
