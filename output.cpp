@@ -28,6 +28,12 @@ int main() {
 
 	arr2[a] = 234;
 
+	scanf( "%d" , &a );
+
+	printf( "%s" , "Potato :" );
+	printf( "%d" , a );
+	printf( "%s" , "\n" );
+
 
   temp_bool_1 = 5 > 8;
 	temp_bool_1= !temp_bool_1;

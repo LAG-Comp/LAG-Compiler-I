@@ -5,12 +5,16 @@ Global Array <integer> of size 100 arr2;
 
 Global Matrix <integer> of size 3 by 10 mat; 
 
+
 Starting up...
 <integer> a;
 a = 1;
 mat(a,3) = 5;
 
 arr2(a) = 234;
+
+Scan <integer> to a;
+Print this "Potato :" this a this "\n";
 
 Array <integer> of size 8 arr; 
 
