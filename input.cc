@@ -15,13 +15,11 @@ Output: <integer> resultado
 		b = n;
 	}
 
-	If b is equal to 0 execute
-	{
-		resultado = 0;
-	}
-	Else
-	{
-		resultado = Execute function MDC with ( a, b );
+	For index from b to a execute{
+		Print this "\t" this index this "\n";
+		If index is equal to 70 execute{
+			resultado = 40;
+		}
 	}
 }
 

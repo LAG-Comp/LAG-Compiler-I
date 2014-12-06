@@ -213,14 +213,24 @@ SIWTCH_BLOCK : _CASE_EQUALS F ':' BLOCK SIWTCH_BLOCK
 
 CALL_FUNCTION : _EXECUTE_FUNCTION _ID _WITH '(' ARGUMENTS ')' 
 			  { if( fetch_function_st($2.v, NULL) ){
-			  		$$.v = $2.v + "(" + $5.c + ");\n";
+			  		$$.c = $5.c + "\n\t" + $2.v + "(" + $5.v + ");\n";
 			  		$$.t = function_return[$2.v];
 			  	}
 			  }
-              | _EXECUTE_FUNCTION _ID '(' ')' { $$.v = $2.v + "();\n"; $$.t = function_return[$2.v]; }
+              | _EXECUTE_FUNCTION _ID '(' ')' { $$.c = "\n\t" + $2.c + "();\n"; $$.t = function_return[$2.v]; }
               ;
 
-ARGUMENTS : E ',' ARGUMENTS { $$.c = $1.v + $2.v + $3.v; }
+CALL_FUNCTION_RETURN : _EXECUTE_FUNCTION _ID _WITH '(' ARGUMENTS ')' 
+			  		 { if( fetch_function_st($2.v, NULL) ){
+			  		 		$$.c = $5.c;
+			  				$$.v = $2.v + "(" + $5.v + ")";
+			  				$$.t = function_return[$2.v];
+			  			}
+			  		 }
+              		 | _EXECUTE_FUNCTION _ID '(' ')' { $$.v = $2.v + "()"; $$.t = function_return[$2.v]; }
+               		 ;
+
+ARGUMENTS : E ',' ARGUMENTS { $$.v = $1.v + $2.v + $3.v; $$.c = $1.c + $3.c; }
           | E 
           ;
 
@@ -303,7 +313,7 @@ E : E '+' E  { gen_code_bin_ops(&$$, $1, $2, $3); }
   | _NOT E   { gen_code_not(&$$, $2); }
   | _ID '(' E ')' 		{ gen_code_return_array(&$$, $1, $3); }
   | _ID '(' E ',' E ')' { gen_code_return_matrix(&$$, $1, $3, $5); }
-  | CALL_FUNCTION
+  | CALL_FUNCTION_RETURN
   | _ID
   { if( fetch_var_ST( *st, $1.v, &$$.t ) || fetch_var_ST( global_st, $1.v, &$$.t ) ) 
       $$.v = $1.v; 
