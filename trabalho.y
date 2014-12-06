@@ -40,7 +40,7 @@ void gen_code_function_without_return( Attribute* SS, const Attribute function_n
 void gen_code_if( Attribute *SS, const Attribute& expr, const Attribute& cmdsThen );
 void gen_code_if_else( Attribute *SS, const Attribute& expr, const Attribute& cmdsThen, const Attribute& cmdsElse );
 void gen_code_main( Attribute* SS, const Attribute& cmds );
-void gen_code_not( Attribute* SS, const Attribute& value);
+void gen_code_una_ops( Attribute* SS, const Attribute& op, const Attribute& value);
 void gen_code_parameter( Attribute* SS, const Attribute var_type, const Attribute var_name);
 void gen_code_parameters( Attribute* SS, const Attribute param, const Attribute params);
 void gen_code_print( Attribute* SS, const Attribute& cmds, const Attribute& expr );
@@ -308,7 +308,9 @@ E : E '+' E  { gen_code_bin_ops(&$$, $1, $2, $3); }
   | E _LT E  { gen_code_bin_ops(&$$, $1, $2, $3); }
   | E _LE E  { gen_code_bin_ops(&$$, $1, $2, $3); }
   | '(' E ')' { $$ = $2; }
-  | _NOT E   { gen_code_not(&$$, $2); }
+  | _NOT E   { gen_code_una_ops(&$$, $1, $2); }
+  | '+' E 	 { gen_code_una_ops(&$$, $1, $2); }
+  | '-' E 	 { gen_code_una_ops(&$$, $1, $2); }
   | _ID '(' E ')' 		{ gen_code_return_array(&$$, $1, $3); }
   | _ID '(' E ',' E ')' { gen_code_return_matrix(&$$, $1, $3, $5); }
   | CALL_FUNCTION_RETURN
@@ -430,16 +432,19 @@ void gen_code_function_with_return( Attribute* SS,
 			"}\n\n";
 }
 
-void gen_code_not( Attribute* SS, const Attribute& value){
-	if( value.t.name == "<boolean>" ){
-		string temp1 = gen_temp(Type("<boolean>"));
+void gen_code_una_ops( Attribute* SS, const Attribute& op, const Attribute& value){
+	if( (op.v == "!" && value.t.name == "<boolean>") 
+		|| ( (op.v == "+" || op.v == "-") && ( value.t.name == "<integer>" 
+											|| value.t.name == "<floating_point>"
+											|| value.t.name == "<double_precision>" ) ) ){
+		string temp1 = gen_temp(value.t);
 		SS->c = value.c + 
-				"\t" + temp1 + " = !" + value.v + ";\n";
+				"\t" + temp1 + " = " + op.v + value.v + ";\n";
 		SS->v = temp1;
-		SS->t = Type("<boolean>");
+		SS->t = value.t;
 	}
 	else{
-		err("The type of expression is not a boolean!");
+		err("Can't make a this unary operand: "+op.v+", with type: "+value.t.name);
 	}
 }
 
