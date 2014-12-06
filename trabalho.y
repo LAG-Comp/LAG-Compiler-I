@@ -555,6 +555,7 @@ void gen_code_if_else( Attribute *SS, const Attribute& expr, const Attribute& cm
           "\t" + expr.v + "= !" + expr.v + ";\n" +
           "\tif( " + expr.v + " ) goto " + ifEnd + ";\n" +
           "\t" + cmdsThen.c + "\n" +
+          "\tgoto " + ifChainEnd + ";\n" +
           "\t" + ifEnd + ":\n" + 
           "\t" + cmdsElse.c + "\n" +
           "\t" + ifChainEnd + ":\n";  
