@@ -6,8 +6,10 @@ using namespace std;
 const int MAX_STR = 256;
 
 symbol_table global_st;
+
 symbol_table temp_tbl;
 var_temp_table tep;
+
 symbol_table* st = &temp_tbl;
 var_temp_table* st_temp = &tep;
 
@@ -26,7 +28,7 @@ bool fetch_var_ST( symbol_table& st, string nameVar, Type* typeVar );
 string gen_defined_variable(map<string,Type>& sim_table);
 string gen_function_header();
 string gen_temp( Type t );
-string gen_temp_declaration();
+string gen_temp_declaration(map<string,int> local_temp);
 void add_function_header( Attribute* SS, const Attribute function_name );
 void gen_code_attribution_without_index( Attribute* SS, Attribute& lvalue, const Attribute& rvalue );
 void gen_code_attribution_1_index( Attribute* SS, Attribute& lvalue, const Attribute& index, const Attribute& rvalue );
@@ -385,6 +387,7 @@ void gen_code_function_without_return( 	Attribute* SS,
 	remove_temporary_vars();
 	function_header[function_name.v] = "void " + function_name.v + "(" + param.c + ")";
 	SS->c = "\n\n" + function_header[function_name.v] + "{\n" +
+			gen_temp_declaration( *st_temp ) +
 			gen_defined_variable( *st ) +
 			block.c +
 			"}\n\n";
@@ -412,6 +415,7 @@ void gen_code_function_with_return( Attribute* SS,
 	function_header[function_name.v] = t + " " + function_name.v + "(" + param.c + ")";
 
 	SS->c = "\n\n" + function_header[function_name.v] + "{\n" +
+			gen_temp_declaration( *st_temp ) +
 			gen_defined_variable( *st ) +
 			block.c +
 			"\treturn " + output_name.v + ";\n" +
@@ -551,7 +555,7 @@ void gen_code_if_else( Attribute *SS, const Attribute& expr, const Attribute& cm
 void gen_code_main( Attribute* SS, const Attribute& cmds ) {
   *SS = Attribute();
   SS->c = "\nint main() {\n" +
-           gen_temp_declaration() + 
+           gen_temp_declaration( *st_temp ) + 
            "\n" +
            gen_defined_variable( *st ) +
            "\n" +
@@ -560,25 +564,25 @@ void gen_code_main( Attribute* SS, const Attribute& cmds ) {
            "}\n";
 }
 
-string gen_temp_declaration() {
+string gen_temp_declaration(map<string,int> local_temp) {
   string c;
-  
-  for( int i = 0; i < n_var_temp["bool"]; i++ )
+
+  for( int i = 0; i < local_temp["bool"]; i++ )
     c += "\tint temp_bool_" + toStr( i + 1 ) + ";\n";
     
-  for( int i = 0; i < n_var_temp["int"]; i++ )
+  for( int i = 0; i < local_temp["int"]; i++ )
     c += "\tint temp_int_" + toStr( i + 1 ) + ";\n";
 
-    for( int i = 0; i < n_var_temp["char"]; i++ )
+    for( int i = 0; i < local_temp["char"]; i++ )
     c += "\tchar temp_char_" + toStr( i + 1 ) + ";\n";
     
-  for( int i = 0; i < n_var_temp["double"]; i++ )
+  for( int i = 0; i < local_temp["double"]; i++ )
     c += "\tdouble temp_double_" + toStr( i + 1 ) + ";\n";
 
-    for( int i = 0; i < n_var_temp["float"]; i++ )
+    for( int i = 0; i < local_temp["float"]; i++ )
     c += "\tfloat temp_float_" + toStr( i + 1 ) + ";\n";
     
-  for( int i = 0; i < n_var_temp["string"]; i++ )
+  for( int i = 0; i < local_temp["string"]; i++ )
     c += "\tchar temp_string_" + toStr( i + 1 ) + "[" + toStr( MAX_STR )+ "];\n";
     
   return c;  
@@ -854,7 +858,7 @@ void err( string msg )
 }
 
 string gen_temp( Type t ) {
-	return "temp_" + type_names[t.name].name + "_" + toStr( ++n_var_temp[type_names[t.name].name] );
+	return "temp_" + type_names[t.name].name + "_" + toStr( ++( *st_temp)[type_names[t.name].name] );
 }
 
 int main(int argc, char **argv){

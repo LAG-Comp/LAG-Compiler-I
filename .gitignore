@@ -4,4 +4,4 @@ trabalho
 lex.yy.c
 y.tab.c
 y.output
-output.cc
+output.cpp
