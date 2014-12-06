@@ -48,7 +48,6 @@ void gen_code_scan( Attribute* SS, const Attribute& var_type, const Attribute& v
 void gen_code_while( Attribute* SS, const Attribute& expr, const Attribute& cmds );
 void gen_code_return_array( Attribute* SS, const Attribute& var, const Attribute& index);
 void gen_code_return_matrix( Attribute* SS, const Attribute& var, const Attribute& line,  const Attribute& column );
-void gen_var_declaration( Attribute* SS, const Attribute& typeVar, const Attribute& id );
 void insert_var_ST( symbol_table& st, string nameVar, Type typeVar );
 void insert_function_st( string function_name );
 void remove_temporary_vars();
@@ -123,8 +122,8 @@ FUNCTION : NAME_FUNCTION '!' _INPUT PARAMETERS _OUTPUT TYPE _ID
 		 	function_return[$1.v] = $6.t; } BLOCK
 		 { gen_code_function_with_return(&$$, $1, $4, $6, $7, $9); }
 
-         | _LOAD _ID _INPUT PARAMETERS _OUTPUT _VOID { insert_function_st($2.v); } BLOCK
-         { gen_code_function_without_return(&$$, $2, $4, $8); }
+         | NAME_FUNCTION '!' _INPUT PARAMETERS _OUTPUT _VOID BLOCK
+         { gen_code_function_without_return(&$$, $1, $4, $7); }
      	 ;
 
 PARAMETERS : PARAMETER ',' PARAMETERS { gen_code_parameters(&$$, $1, $3); }
@@ -216,7 +215,7 @@ CALL_FUNCTION : _EXECUTE_FUNCTION _ID _WITH '(' ARGUMENTS ')'
 			  		$$.t = function_return[$2.v];
 			  	}
 			  }
-              | _EXECUTE_FUNCTION _ID '(' ')' { $$.c = "\n\t" + $2.c + "();\n"; $$.t = function_return[$2.v]; }
+              | _EXECUTE_FUNCTION _ID '(' ')' { $$.c = "\n\t" + $2.v + "();\n"; $$.t = function_return[$2.v]; }
               ;
 
 CALL_FUNCTION_RETURN : _EXECUTE_FUNCTION _ID _WITH '(' ARGUMENTS ')' 
@@ -454,7 +453,7 @@ void gen_code_print( Attribute* SS, const Attribute& cmds, const Attribute& expr
 		string if_bool_label = new_label( "if_bool", label_counter );
 		SS->c = cmds.c + expr.c + "\tif( " + expr.v + " ) goto " + if_bool_label + ";\n" +
 				"\tprintf( \"false\" );\n" +
-				"\t" + if_bool_label + ":\n" +
+				"\t" + if_bool_label + ":;\n" +
 				"\tprintf( \"true\" );\n";
 	}
 
@@ -499,14 +498,14 @@ void gen_code_for( Attribute* SS, const Attribute& index, const Attribute& initi
     *SS = Attribute();
 
   SS->c = "\t" + index.v + " = " + initial.v + ";\n" +
-      "\t" + cond_for + ":\n" +
+      "\t" + cond_for + ":;\n" +
       "\t" + valueNotCond + " = " + index.v + " < " + end.v + ";\n" +
       "\t" + valueNotCond + " = !" + valueNotCond + ";\n" +
       "\tif( " + valueNotCond + " ) goto " + end_for + ";\n" +
       "\n" + cmds.c + "\n" +
       "\t" + index.v + "= 1 + " + index.v + ";\n" +
       "\tgoto " + cond_for + ";\n" +
-      "\t" + end_for + ":\n\n";
+      "\t" + end_for + ":;\n\n";
 
 }
 
@@ -519,7 +518,7 @@ void gen_code_while( Attribute* SS, const Attribute& expr, const Attribute& cmds
           "\t" + expr.v + "= !" + expr.v + ";\n" +
           "\tif( " + expr.v + " ) goto " + whileEnd + ";\n" +
           "\t" + cmds.c + "\n" +
-          whileEnd + ":\n";
+          "\t" + whileEnd + ":;\n";
 }
 
 void gen_code_do_while( Attribute* SS, const Attribute& cmds, const Attribute& expr )
@@ -527,7 +526,7 @@ void gen_code_do_while( Attribute* SS, const Attribute& cmds, const Attribute& e
   string doWhileBegin = new_label("do_while_begin", label_counter);
 
   *SS = Attribute();
-  SS->c = doWhileBegin + ":\n" +
+  SS->c = "\t" + doWhileBegin + ":;\n" +
           "\t" + cmds.c + "\n" +
           "\t" + expr.c +
           "\tif( " + expr.v + " ) goto " + doWhileBegin + ";\n";
@@ -542,7 +541,7 @@ void gen_code_if( Attribute *SS, const Attribute& expr, const Attribute& cmdsThe
           "\t" + expr.v + "= !" + expr.v + ";\n" +
           "\tif( " + expr.v + " ) goto " + ifEnd + ";\n" +
           "\t" + cmdsThen.c + "\n" +
-          "\t" + ifEnd + ":\n";
+          "\t" + ifEnd + ":;\n";
 }
 
 void gen_code_if_else( Attribute *SS, const Attribute& expr, const Attribute& cmdsThen, const Attribute& cmdsElse )
@@ -556,9 +555,9 @@ void gen_code_if_else( Attribute *SS, const Attribute& expr, const Attribute& cm
           "\tif( " + expr.v + " ) goto " + ifEnd + ";\n" +
           "\t" + cmdsThen.c + "\n" +
           "\tgoto " + ifChainEnd + ";\n" +
-          "\t" + ifEnd + ":\n" + 
+          "\t" + ifEnd + ":;\n" + 
           "\t" + cmdsElse.c + "\n" +
-          "\t" + ifChainEnd + ":\n";  
+          "\t" + ifChainEnd + ":;\n";  
 }
 
 
@@ -759,25 +758,6 @@ void gen_code_attribution_without_index( Attribute* SS, Attribute& lvalue,
     } 
     else
       err( "Variable not declared: " + lvalue.v );
-}
-
-void gen_var_declaration( Attribute* SS, const Attribute& typeVar, const Attribute& id ) {
-  SS->v = "";
-  SS->t = typeVar.t;
-  if( typeVar.t.name == "<string>" ) {
-    SS->c = typeVar.c + 
-           "char " + id.v + "["+ toStr( MAX_STR ) +"];\n";   
-  }
-  else {
-    if( typeVar.t.name == "<boolean>" ){
-      SS->c = "\t" + typeVar.c + 
-          "int" + " " + id.v + ";\n";
-  	}
-  	else{
-		SS->c = "\t" + typeVar.c + 
-        	type_names[typeVar.t.name].name + " " + id.v + ";\n";
-    }
-  }
 }
 
 void insert_var_ST( symbol_table& sim_t, string nameVar, Type typeVar ) {
