@@ -29,7 +29,6 @@ string gen_defined_variable(map<string,Type>& sim_table);
 string gen_function_header();
 string gen_temp( Type t );
 string gen_temp_declaration(map<string,int> local_temp);
-void add_function_header( Attribute* SS, const Attribute function_name );
 void gen_code_attribution_without_index( Attribute* SS, Attribute& lvalue, const Attribute& rvalue );
 void gen_code_attribution_1_index( Attribute* SS, Attribute& lvalue, const Attribute& index, const Attribute& rvalue );
 void gen_code_attribution_2_index( Attribute* SS, Attribute& lvalue, const Attribute& line, const Attribute& column, const Attribute& rvalue );

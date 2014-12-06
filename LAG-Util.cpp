@@ -32,7 +32,7 @@ void init_c_operands_table(map<string,string> &c_op)
 	c_op["-"] = "-";
 	c_op["*"] = "*";
 	c_op["/"] = "/";
-	c_op["modulo"] = "%%";
+	c_op["modulo"] = "%";
 	c_op["and"] = "&&";
 	c_op["or"] = "||";
 	c_op["is equal to"] = "==";

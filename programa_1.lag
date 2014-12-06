@@ -21,6 +21,7 @@ Output: <integer> resultado
 	}
 	Else
 	{
+		a = a modulo b;
 		resultado = Execute function MDC with ( a, b );
 	}
 }
