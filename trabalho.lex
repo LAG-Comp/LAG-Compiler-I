@@ -16,7 +16,6 @@ COMMENT  #[^#]*#
 {COMMENT}   {}
 
 "<integer>"             {  yylval = Attribute( "", yytext ); return _INT; }
-"<character>"           {  yylval = Attribute( "", yytext ); return _CHAR; }
 "<boolean>"             {  yylval = Attribute( "", yytext ); return _BOOL; }
 "<double_precision>"    {  yylval = Attribute( "", yytext ); return _DOUBLE; }
 "<floating_point>"      {  yylval = Attribute( "", yytext ); return _FLOAT; }

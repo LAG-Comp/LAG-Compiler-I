@@ -64,8 +64,8 @@ void yyerror(const char*);
 
 %start START
 
-%token _CTE_INT _CTE_CHAR _CTE_DOUBLE _CTE_STRING _ID _CTE_TRUE _CTE_FALSE _X
-%token _INT _CHAR _BOOL _DOUBLE _FLOAT _STRING _VOID
+%token _CTE_INT _CTE_DOUBLE _CTE_STRING _ID _CTE_TRUE _CTE_FALSE _X
+%token _INT _BOOL _DOUBLE _FLOAT _STRING _VOID
 %token _GLOBAL _ARRAY _MATRIX
 %token _OF_SIZE _BY
 %token _REFERENCE _COPY
@@ -257,7 +257,6 @@ TYPE : SIMPLE_TYPE
 	 ;
 
 SIMPLE_TYPE : _INT
-     		| _CHAR
      		| _BOOL
      		| _DOUBLE
      		| _FLOAT
@@ -812,11 +811,11 @@ void gen_code_bin_ops( Attribute* SS, const Attribute& S1, const Attribute& S2, 
   SS->v = gen_temp( SS->t );
 
   if( SS->t.name == "<string>" ){
-    "\n\tstrncpy( " + SS->v + ", " + S1.v + ", " + 
+    SS->c = "\n\tstrncpy( " + SS->v + ", " + S1.v + ", " + 
                         toStr( MAX_STR - 1 ) + " );\n" +
-            "\tstrncat( " + SS->v + ", " + S3.v + ", " + 
+          	"\tstrncat( " + SS->v + ", " + S3.v + ", " + 
                         toStr( MAX_STR - 1 ) + " );\n" +
-            "\t" + SS->v + "[" + toStr( MAX_STR - 1 ) + "] = 0;\n\n";    
+          	"\t" + SS->v + "[" + toStr( MAX_STR - 1 ) + "] = 0;\n\n";    
   }
   else
     SS->c = S1.c + S3.c + 

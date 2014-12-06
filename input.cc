@@ -3,7 +3,7 @@ Starting up...
 
 	<integer> a;
 	a = + a;
-	<integer> g;
-	g = -(g+a);
+	<string> g,f;
+	g = g+f;
 
 End of file
