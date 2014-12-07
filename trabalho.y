@@ -5,6 +5,8 @@ using namespace std;
 
 const int MAX_STR = 256;
 
+map<string,Type> type_names;
+
 symbol_table global_st;
 
 symbol_table temp_tbl;
@@ -20,8 +22,12 @@ map<string, symbol_table> function_st;
 map<string, var_temp_table> function_temps;
 map<string, symbol_table> function_parameters;
 
+map<string,int> label_counter;
 
 string pipeActive;
+string stepPipe;
+Attribute begin_pipe;
+Attribute end_pipe;
 
 bool fetch_function_st( string function_name, map<string,Type>* sim_t );
 bool fetch_var_ST( symbol_table& st, string nameVar, Type* typeVar );
@@ -43,6 +49,10 @@ void gen_code_main( Attribute* SS, const Attribute& cmds );
 void gen_code_una_ops( Attribute* SS, const Attribute& op, const Attribute& value);
 void gen_code_parameter( Attribute* SS, const Attribute var_type, const Attribute var_name);
 void gen_code_parameters( Attribute* SS, const Attribute param, const Attribute params);
+void gen_code_pipe( Attribute* SS, Attribute source, Attribute proc, Attribute consumer);
+void gen_code_pipe_filter( Attribute* SS, const Attribute& condition );
+void gen_code_pipe_interval( Attribute* SS, Attribute begin, Attribute end, string cmds);
+void gen_code_pipe_source( Attribute* SS, Attribute var);
 void gen_code_print( Attribute* SS, const Attribute& cmds, const Attribute& expr );
 void gen_code_scan( Attribute* SS, const Attribute& var_type, const Attribute& var_name );
 void gen_code_switch( Attribute* SS, Attribute& id, Attribute& switch_block );
@@ -157,8 +167,9 @@ COMMAND : CMD_IF
         | CMD_SWITCH
         ;
 
-COMMAND_TO_PIPE : COMMAND
-        		| COMMAND_COMMA
+COMMAND_TO_PIPE : COMMAND COMMAND_TO_PIPE { $$.c = $1.c + "\n" + $2.c; }
+        		| COMMAND_COMMA ';' COMMAND_TO_PIPE { $$.c = $1.c + "\n" + $3.c; }
+        		| { $$ = Attribute(); }
         		;
 
 PRINT : _PRINT EXPR_PRINT
@@ -285,35 +296,46 @@ SIMPLE_TYPE : _INT
      		| _STRING
      		;
 
-ATR : _ID '=' E { gen_code_attribution_without_index( &$$, $1, $3 );}
+ATR : _ID '=' E 
+	{ 	if( $1.v == "x" || $1.v == "x_"+type_names[pipeActive].name ) 
+			err("Can't make the attribution to variable 'x' because it work only on pipe.");
+		gen_code_attribution_without_index( &$$, $1, $3 );
+	}
     | _ID '(' E ')' '=' E 		{ gen_code_attribution_1_index( &$$, $1, $3, $6 ); }
     | _ID '(' E ',' E ')' '=' E { gen_code_attribution_2_index( &$$, $1, $3, $5, $8 ); }
     ;
 
-PIPE : '[' PIPE_SOURCE '|' PIPE_PROCESSORS '|' PIPE_CONSUMER ']'
+PIPE : '[' _ID '|' PIPE_PROCESSORS '|' PIPE_CONSUMER ']'
+	 { gen_code_pipe(&$$, $2, $4, $6); }
+	 | '[' _INTERVAL_FROM E _TO INIT_PIPE '|' PIPE_PROCESSORS '|' PIPE_CONSUMER ']'
+	 { gen_code_pipe_interval( &$$, $3, $5, $7.c + $9.c); }
      ;
 
-PIPE_SOURCE : _ID
-      		| _INTERVAL_FROM _CTE_INT _TO _CTE_INT
+INIT_PIPE : E 
+			{ 	$$ = $1;
+				pipeActive = $1.t.name;
+				insert_var_ST( *st, "x_"+type_names[pipeActive].name, pipeActive);
+				stepPipe = new_label( "step_pipe", label_counter);
+			}
       		;
 
-PIPE_CONSUMER : _FOR_EACH _X '(' COMMAND_TO_PIPE ')'
+PIPE_CONSUMER : _FOR_EACH '(' COMMAND_TO_PIPE ')' { $$.c = $3.c; }
+         	  | _SORT '(' SORT_PARAM ',' _ID ')'
         	  ;
 
 PIPE_PROCESSORS : PIPE_PROCESSORS '|' PIPE_PROCESSOR
           		| PIPE_PROCESSOR
           		;
 
-PIPE_PROCESSOR : _FILTER _X E
-         | _FIRST_N _CTE_INT
-         | _LAST_N _CTE_INT
-         | _SORT '(' SORT_PARAM ')'
-         | _SPLIT _ID _TO _ID _CRITERION E
-         ;
+PIPE_PROCESSOR : _FILTER '(' E ')'
+			   { gen_code_pipe_filter( &$$, $3 ); }
+         	   | _FIRST_N _CTE_INT
+         	   | _LAST_N _CTE_INT
+         	   ;
 
 SORT_PARAM : _CRESCENT
-         | _DECRESCENT
-         ;
+           | _DECRESCENT
+           ;
 
 E : E '+' E  { gen_code_bin_ops(&$$, $1, $2, $3); }
   | E '-' E  { gen_code_bin_ops(&$$, $1, $2, $3); }
@@ -342,13 +364,19 @@ E : E '+' E  { gen_code_bin_ops(&$$, $1, $2, $3); }
       err( "Variable not declared: " + $1.v );
   }
   | _X
+  {
+  	if( pipeActive != "" )
+  		$$ = Attribute( "x_"+type_names[pipeActive].name, pipeActive);
+  	else
+  		err("Variable x can be use out of pipe.");
+  }
   | F      
   ;
 
 F : _CTE_INT 	{ $$.v = $1.v; $$.t = Type( "<integer>" );}
   | _CTE_DOUBLE { $$.v = $1.v; $$.t = Type( "<double_precision>" );}
-  | _CTE_TRUE 	{ $$.v = $1.v; $$.t = Type( "<boolean>" );}
-  | _CTE_FALSE	{ $$.v = $1.v; $$.t = Type( "<boolean>" );}
+  | _CTE_TRUE 	{ $$.v = "1"; $$.t = Type( "<boolean>" );}
+  | _CTE_FALSE	{ $$.v = "0"; $$.t = Type( "<boolean>" );}
   | _CTE_STRING	{ $$.v = $1.v; $$.t = Type( "<string>" );}
   ;
 
@@ -357,13 +385,68 @@ F : _CTE_INT 	{ $$.v = $1.v; $$.t = Type( "<integer>" );}
 int nline = 1;
 
 map<string,int> n_var_temp;
-map<string,int> label_counter;
 
 map<string,Type> operation_results;
 map<string,string> c_op;
-map<string,Type> type_names;
 
 #include "lex.yy.c"
+
+void gen_code_pipe_filter( Attribute* SS, const Attribute& condition ) {
+  *SS = Attribute();
+  SS->v = gen_temp( Type( "<boolean>" ) );
+  SS->c = condition.c + 
+          "\t" + SS->v + " = !" + condition.v + ";\n" +
+          "\tif( " + SS->v + " ) goto " + stepPipe + ";\n";
+}
+
+void gen_code_pipe_interval( Attribute* SS, Attribute begin, Attribute end, string cmds)
+{
+	Attribute start, condition, step;
+            
+    start.c = begin.c + end.c +
+               "\tx_" + type_names[pipeActive].name + " = " + begin.v + ";\n";
+    condition.t.name = "<boolean>";
+    condition.v = gen_temp( Type( "<boolean>" ) ); 
+    condition.c = "\t" + condition.v + " = " + "x_" + type_names[pipeActive].name + 
+                 " <= " + end.v + ";\n";
+    step.c = "\t" + stepPipe + ":;\n" + 
+              "\tx_" + type_names[pipeActive].name + " = x_" + type_names[pipeActive].name + " + 1;\n";
+
+    string 	for_cond = new_label( "for_cond", label_counter),
+    		end_for = new_label( "end_for", label_counter);
+    string valueNotCond = gen_temp( Type("<boolean>"));
+
+    *SS = Attribute();
+    if( condition.t.name != "<boolean>")
+    	err("The expression must be boolean.");
+
+    SS->c = start.c + "\t" + for_cond + ":;\n" + condition.c +
+    		"\t" + valueNotCond + " = !" + condition.v + ";\n" +
+    		"\tif( " + valueNotCond + " ) goto " + end_for + ";\n" +
+    		cmds +
+    		step.c +
+    		"\tgoto " + for_cond + ";\n" +
+    		"\t" + end_for + ":;\n";
+
+
+    pipeActive = "";
+}
+
+void gen_code_pipe( Attribute* SS, 
+					Attribute source, 
+					Attribute proc, 
+					Attribute consumer)
+{
+
+}
+
+void gen_code_pipe_source_id( Attribute* SS, Attribute var){
+	pipeActive = var.t.name;
+	stepPipe = new_label( "pipe_active", label_counter);
+	insert_var_ST( *st, "x_"+type_names[pipeActive].name, Type(pipeActive));
+	SS->v = var.v;
+	SS->t = var.t;
+}
 
 void gen_code_switch( Attribute* SS, Attribute& id, Attribute& switch_block ){
 
@@ -510,10 +593,13 @@ void gen_code_print( Attribute* SS, const Attribute& cmds, const Attribute& expr
 
 	if( expr.t.name == "<boolean>" ){
 		string if_bool_label = new_label( "if_bool", label_counter );
+		string end_if = new_label("end_if", label_counter);
 		SS->c = cmds.c + expr.c + "\tif( " + expr.v + " ) goto " + if_bool_label + ";\n" +
-				"\tprintf( \"false\" );\n" +
+				"\tprintf( \"%s\",\"false\" );\n" +
+				"\tgoto " + end_if + ";\n" +
 				"\t" + if_bool_label + ":;\n" +
-				"\tprintf( \"true\" );\n";
+				"\tprintf( \"%s\",\"true\" );\n"
+				"\t" + end_if + ":;\n\n" ;
 	}
 
   	if( expr.t.name == "<floating_point>" || expr.t.name == "<double_precision>" ){
