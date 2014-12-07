@@ -578,27 +578,30 @@ void gen_code_main( Attribute* SS, const Attribute& cmds ) {
 }
 
 string gen_temp_declaration(map<string,int> local_temp) {
-  string c;
+	string c;
 
-  for( int i = 0; i < local_temp["bool"]; i++ )
-    c += "\tint temp_bool_" + toStr( i + 1 ) + ";\n";
-    
-  for( int i = 0; i < local_temp["int"]; i++ )
-    c += "\tint temp_int_" + toStr( i + 1 ) + ";\n";
+	for( int i = 0; i < local_temp["bool"]; i++ )
+		c += "\tint temp_bool_" + toStr( i + 1 ) + ";\n";
 
-    for( int i = 0; i < local_temp["char"]; i++ )
-    c += "\tchar temp_char_" + toStr( i + 1 ) + ";\n";
-    
-  for( int i = 0; i < local_temp["double"]; i++ )
-    c += "\tdouble temp_double_" + toStr( i + 1 ) + ";\n";
+	for( int i = 0; i < local_temp["int"]; i++ )
+		c += "\tint temp_int_" + toStr( i + 1 ) + ";\n";
 
-    for( int i = 0; i < local_temp["float"]; i++ )
-    c += "\tfloat temp_float_" + toStr( i + 1 ) + ";\n";
-    
-  for( int i = 0; i < local_temp["string"]; i++ )
-    c += "\tchar temp_string_" + toStr( i + 1 ) + "[" + toStr( MAX_STR )+ "];\n";
-    
-  return c;  
+	for( int i = 0; i < local_temp["char"]; i++ )
+		c += "\tchar temp_char_" + toStr( i + 1 ) + ";\n";
+
+	for( int i = 0; i < local_temp["double"]; i++ )
+		c += "\tdouble temp_double_" + toStr( i + 1 ) + ";\n";
+
+	for( int i = 0; i < local_temp["float"]; i++ )
+		c += "\tfloat temp_float_" + toStr( i + 1 ) + ";\n";
+
+	for( int i = 0; i < local_temp["char*"]; i++ )
+		c += "\tchar* temp_char_pointer_" + toStr( i + 1 ) + ";\n";
+
+	for( int i = 0; i < local_temp["string"]; i++ )
+		c += "\tchar temp_string_" + toStr( i + 1 ) + "[" + toStr( MAX_STR )+ "];\n";
+
+	return c;  
 }
 
 string gen_defined_variable(map<string,Type>& sim_table){
@@ -646,16 +649,33 @@ void gen_code_return_matrix( Attribute* SS, const Attribute& var, const Attribut
 	
 	map<string,Type> local_st = *st;
 	if( fetch_var_ST( local_st, var.v, &SS->t ) || fetch_var_ST( global_st, var.v, &SS->t ) ){
-		if( line.t.name == "<integer>" && column.t.name == "<integer>" ){
-		  	string temp1 = gen_temp(Type("<integer>"));
-		  	string temp2 = gen_temp(Type("<integer>"));
-		  	SS->c = line.c + column.c +
-		  			"\t" + temp1 + " = " + toStr(SS->t.d2) + " * " + line.v + ";\n" +
-		  			"\t" + temp2 + " = " + temp1 + " + " + column.v + ";\n";
-		  	SS->v = var.v + "[" + temp2 + "]"; 
+		if( line.t.name == "<integer>" 
+			&& column.t.name == "<integer>" 
+			&& SS->t.n_dim == 2 ){
+		  	if( SS->t.name == "<string>" ){
+		  		string temp1 = gen_temp(Type("<integer>"));
+		  		string temp_char_pointer = gen_temp(Type("char*"));
+			  	SS->c = line.c + column.c +
+			  			"\t" + temp1 + " = " + toStr(SS->t.d2) + " * " + line.v + ";\n" +
+			  			"\t" + temp1 + " = " + temp1 + " + " + column.v + ";\n" + 
+			  			"\t" + temp1 + " = " + temp1 + " * " + toStr(MAX_STR) + ";\n" +
+			  			"\t" + temp_char_pointer + " = " + var.v + " + " + temp1 + ";\n";
+			  	SS->v = temp_char_pointer;
+			  	SS->t =Type(SS->t.name);
+		  	}
+		  	else{
+		  		string temp1 = gen_temp(Type("<integer>"));
+			  	SS->c = line.c + column.c +
+			  			"\t" + temp1 + " = " + toStr(SS->t.d2) + " * " + line.v + ";\n" +
+			  			"\t" + temp1 + " = " + temp1 + " + " + column.v + ";\n" + 
+			  			"\t" + temp1 + " = " + var.v + "[" + temp1 + "];\n";
+			  	SS->v = temp1;
+			  	SS->t =Type(SS->t.name);
+		  	}
 		}
 		else{
-		  	err("The type of index not accepted, please choose one with type equal to <integer>");
+		  	err("Type of index line: " + line.t.name + " column: " + column.t.name + " not accepted, please choose one with type equal to <integer>." + 
+      		" or the" + " dimension is wrong: "+ toStr(SS->t.n_dim));
 		}
 	}
 	else {
@@ -665,12 +685,28 @@ void gen_code_return_matrix( Attribute* SS, const Attribute& var, const Attribut
 
 void gen_code_return_array( Attribute* SS, const Attribute& var, const Attribute& index){
 	if( fetch_var_ST( *st, var.v, &SS->t ) || fetch_var_ST( global_st, var.v, &SS->t ) ) 
-      if( index.t.name == "<integer>" ){
-      	SS->c = index.c;
-      	SS->v = var.v + "[" + index.v + "]"; 
+      if( index.t.name == "<integer>" && SS->t.n_dim == 1 ){
+      	if( SS->t.name == "<string>" ){
+      		string temp_char_pointer = gen_temp(Type("char*"));
+		  	string temp1 = gen_temp(Type("<integer>"));
+      		SS->c =	index.c +
+      				"\t" + temp1 + " = " + index.v + " * " + toStr(MAX_STR) + ";\n" +
+      				"\t" + temp_char_pointer + " = " + var.v + " + " + temp1 + ";\n";
+      		SS->v = temp_char_pointer;
+      		SS->t = Type("<string>");
+
+      	}
+      	else{
+      		string temp1 = gen_temp(SS->t);
+	      	SS->c = index.c +
+	      			"\t" + temp1 + " = " + var.v + "[" + index.v + "];\n";
+	      	SS->v = temp1;
+	      	SS->t = Type(SS->t.name);
+        }
       }
       else{
-      	err("Type of index not accepted, please choose one with type equal to <integer>");
+      	err("Type of index " + index.t.name +" not accepted, please choose one with type equal to <integer>." + 
+      		" or the" + " dimension is wrong: "+ toStr(SS->t.n_dim));
       }
 
     else
@@ -687,21 +723,25 @@ void gen_code_attribution_2_index( Attribute* SS, Attribute& lvalue,
 	    	&& line.t.name == "<integer>"
 	    	&& column.t.name == "<integer>" ) 
 	    {
-	      	if( lvalue.t.name == "<string>" ) { // ainda não funciona, não sei como fazer sem usar ponteiros;
-	        	//SS->c = lvalue.c + rvalue.c + 
-	        	//		"" +
-	        	//        "\tstrncpy( " + lvalue.v + "[" + line.v + "], " + rvalue.v + ", " + 
-	        	//                    toStr( MAX_STR - 1 ) + " );\n" +
-	        	//        "\t" + lvalue.v + "[" + toStr( MAX_STR*lvalue.t.d1 - 1 ) + "] = 0;\n";
+	      	if( lvalue.t.name == "<string>" ) {
+	      		string temp1 = gen_temp( Type("<integer>") );
+	        	string temp_char_pointer = gen_temp(Type("char*"));
+				SS->c = lvalue.c + rvalue.c + 
+	        			"\t" + temp1 + " = " + line.v + " * " + toStr(lvalue.t.d2) + ";\n" +
+	        			"\t" + temp1 + " = " + temp1 + " + " + column.v + ";\n" +
+						"\t" + temp1 + " = " + temp1 + " * " + toStr(MAX_STR) + ";\n" +
+						"\t" + temp_char_pointer + " = " + lvalue.v + " + " + temp1 + ";\n" +
+				        "\tstrncpy( " + temp_char_pointer + ", " + rvalue.v + ", " + 
+				                    toStr( MAX_STR - 1 ) + " );\n" +
+				        "\t" + temp_char_pointer + "[" + toStr( MAX_STR - 1 ) + "] = 0;\n";
 	      	}
 	      	else{
 	      		string temp1 = gen_temp( Type("<integer>") );
-	      		string temp2 = gen_temp( Type("<integer>") );
 
 	        	SS->c = lvalue.c + rvalue.c +
 	        		"\t" + temp1 + " = " + line.v + " * " + toStr(lvalue.t.d2) + ";\n" +
-	        		"\t" + temp2 + " = " + temp1 + " + " + column.v + ";\n" +
-	                "\t" + lvalue.v + "[" + temp2 + "] = " + rvalue.v + ";\n"; 
+	        		"\t" + temp1 + " = " + temp1 + " + " + column.v + ";\n" +
+	                "\t" + lvalue.v + "[" + temp1 + "] = " + rvalue.v + ";\n"; 
 	    	}
 	    }
 	    else
@@ -710,41 +750,44 @@ void gen_code_attribution_2_index( Attribute* SS, Attribute& lvalue,
 	            lvalue.t.name );
     } 
     else
-      err( "Variable not declared: " + lvalue.v );
+      	err( "Variable not declared: " + lvalue.v );
 }
 
 void gen_code_attribution_1_index( Attribute* SS, Attribute& lvalue,
 										 const Attribute& index,
                                          const Attribute& rvalue ) {
-  if( fetch_var_ST( *st, lvalue.v, &lvalue.t ) || fetch_var_ST( global_st, lvalue.v, &lvalue.t )) {
-    if( lvalue.t.name == rvalue.t.name 
-    	&& lvalue.t.n_dim == 1 
-    	&& index.t.name == "<integer>" ) 
-    {
-      if( lvalue.t.name == "<string>" ) { // ainda não funciona, não sei como fazer sem usar ponteiros;
-        //SS->c = lvalue.c + rvalue.c + 
-        //		"" +
-        //        "\tstrncpy( " + lvalue.v + "[" + index.v + "], " + rvalue.v + ", " + 
-        //                    toStr( MAX_STR - 1 ) + " );\n" +
-        //        "\t" + lvalue.v + "[" + toStr( MAX_STR*lvalue.t.d1 - 1 ) + "] = 0;\n";
-      }
-      else
-        SS->c = lvalue.c + rvalue.c + 
-                "\t" + lvalue.v + "[" + index.v + "] = " + rvalue.v + ";\n"; 
-    }
-    else
-      err( "Expression " + rvalue.t.name + 
-            " can be attributed to variable " +
-            lvalue.t.name );
-    } 
-    else
-      err( "Variable not declared: " + lvalue.v );
+  	if( fetch_var_ST( *st, lvalue.v, &lvalue.t ) || fetch_var_ST( global_st, lvalue.v, &lvalue.t )) {
+	    if( lvalue.t.name == rvalue.t.name 
+	    	&& lvalue.t.n_dim == 1 
+	    	&& index.t.name == "<integer>" ) 
+	    {
+			if( lvalue.t.name == "<string>" ) {
+				string temp_char_pointer = gen_temp(Type("char*"));
+				string temp_index = gen_temp(Type("<integer>"));
+				SS->c = lvalue.c + rvalue.c + 
+						"\t" + temp_index + " = " + index.v + " * " + toStr(MAX_STR) + ";\n" +
+						"\t" + temp_char_pointer + " = " + lvalue.v + " + " + temp_index + ";\n" +
+				        "\tstrncpy( " + temp_char_pointer + ", " + rvalue.v + ", " + 
+				                    toStr( MAX_STR - 1 ) + " );\n" +
+				        "\t" + temp_char_pointer + "[" + toStr( MAX_STR - 1 ) + "] = 0;\n";
+			}
+			else
+				SS->c = lvalue.c + rvalue.c + 
+				        "\t" + lvalue.v + "[" + index.v + "] = " + rvalue.v + ";\n"; 
+	    }
+	    else
+			err( "Expression " + rvalue.t.name + 
+			    " can be attributed to variable " +
+			    lvalue.t.name );
+	} 
+	else
+	  err( "Variable not declared: " + lvalue.v );
 }
 
 void gen_code_attribution_without_index( Attribute* SS, Attribute& lvalue,
                                          const Attribute& rvalue ) {
   if( fetch_var_ST( *st, lvalue.v, &lvalue.t ) || fetch_var_ST( global_st, lvalue.v, &lvalue.t )) {
-    if( lvalue.t.name == rvalue.t.name ) {
+    if( lvalue.t.name == rvalue.t.name && lvalue.t.n_dim == 0 ) {
       if( lvalue.t.name == "<string>" ) {
         SS->c = lvalue.c + rvalue.c + 
                 "\tstrncpy( " + lvalue.v + ", " + rvalue.v + ", " + 
@@ -852,7 +895,11 @@ void err( string msg )
 }
 
 string gen_temp( Type t ) {
-	return "temp_" + type_names[t.name].name + "_" + toStr( ++( *st_temp)[type_names[t.name].name] );
+	if( t.name == "char*"){
+		return "temp_char_pointer_" + toStr( ++( *st_temp)[t.name] );
+	}
+	else
+		return "temp_" + type_names[t.name].name + "_" + toStr( ++( *st_temp)[type_names[t.name].name] );
 }
 
 int main(int argc, char **argv){
