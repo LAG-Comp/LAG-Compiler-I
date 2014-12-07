@@ -6,7 +6,7 @@ Starting up...
 		a(index) = (index+1)*2;
 	}
 
-	[ interval from 4 to 89 | filter ( x is lesser than 9 ) | for each ( a(5) = a(x-4); Print this x; ) ];
+	[ interval from 4 to 89 | last ( 2 ) | for each ( a(5) = a(x-4); Print this x this "\n"; ) ];
 
 	
 

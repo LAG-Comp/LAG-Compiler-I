@@ -28,6 +28,7 @@ string pipeActive;
 string stepPipe;
 Attribute begin_pipe;
 Attribute end_pipe;
+Attribute index_pipe;
 
 bool fetch_function_st( string function_name, map<string,Type>* sim_t );
 bool fetch_var_ST( symbol_table& st, string nameVar, Type* typeVar );
@@ -51,7 +52,9 @@ void gen_code_parameter( Attribute* SS, const Attribute var_type, const Attribut
 void gen_code_parameters( Attribute* SS, const Attribute param, const Attribute params);
 void gen_code_pipe( Attribute* SS, Attribute source, Attribute proc, Attribute consumer);
 void gen_code_pipe_filter( Attribute* SS, const Attribute& condition );
+void gen_code_pipe_firstN(Attribute* SS, Attribute n);
 void gen_code_pipe_interval( Attribute* SS, Attribute begin, Attribute end, string cmds);
+void gen_code_pipe_lastN(Attribute* SS, Attribute n);
 void gen_code_pipe_source( Attribute* SS, Attribute var);
 void gen_code_print( Attribute* SS, const Attribute& cmds, const Attribute& expr );
 void gen_code_scan( Attribute* SS, const Attribute& var_type, const Attribute& var_name );
@@ -305,14 +308,32 @@ ATR : _ID '=' E
     | _ID '(' E ',' E ')' '=' E { gen_code_attribution_2_index( &$$, $1, $3, $5, $8 ); }
     ;
 
-PIPE : '[' _ID '|' PIPE_PROCESSORS '|' PIPE_CONSUMER ']'
+PIPE : '[' LOAD_PIPE_ID '|' PIPE_PROCESSORS '|' PIPE_CONSUMER ']'
 	 { gen_code_pipe(&$$, $2, $4, $6); }
-	 | '[' _INTERVAL_FROM E _TO INIT_PIPE '|' PIPE_PROCESSORS '|' PIPE_CONSUMER ']'
+	 | '[' _INTERVAL_FROM LOAD_PIPE _TO INIT_PIPE '|' PIPE_PROCESSORS '|' PIPE_CONSUMER ']'
 	 { gen_code_pipe_interval( &$$, $3, $5, $7.c + $9.c); }
      ;
 
+LOAD_PIPE_ID : _ID
+			 ;
+
+LOAD_PIPE : E
+		  { 
+		  	$$ = $1;
+		  	begin_pipe = Attribute();
+		  	begin_pipe.v = gen_temp(Type("<integer>"));
+		  	begin_pipe.c = "\t" + begin_pipe.v + " = " + $1.v + ";\n";
+		  	index_pipe = Attribute();
+		  	index_pipe.v = gen_temp(Type("<integer>"));
+		  	index_pipe.c = "\t" + index_pipe.v + " = 0;\n"; 
+		  }
+		  ;
+
 INIT_PIPE : E 
 			{ 	$$ = $1;
+				end_pipe = Attribute();
+		  		end_pipe.v = gen_temp(Type("<integer>"));
+		  		end_pipe.c = "\t" + end_pipe.v + " = " + $1.v + ";\n";
 				pipeActive = $1.t.name;
 				insert_var_ST( *st, "x_"+type_names[pipeActive].name, pipeActive);
 				stepPipe = new_label( "step_pipe", label_counter);
@@ -329,8 +350,8 @@ PIPE_PROCESSORS : PIPE_PROCESSORS '|' PIPE_PROCESSOR
 
 PIPE_PROCESSOR : _FILTER '(' E ')'
 			   { gen_code_pipe_filter( &$$, $3 ); }
-         	   | _FIRST_N _CTE_INT
-         	   | _LAST_N _CTE_INT
+         	   | _FIRST_N '(' E ')' { gen_code_pipe_firstN( &$$, $3); }
+         	   | _LAST_N '(' E ')' { gen_code_pipe_lastN( &$$, $3); }
          	   ;
 
 SORT_PARAM : _CRESCENT
@@ -391,6 +412,36 @@ map<string,string> c_op;
 
 #include "lex.yy.c"
 
+void gen_code_pipe_firstN(Attribute* SS, Attribute n){
+	*SS = Attribute();
+	if( n.t.name == "<integer>"){
+		SS->v = gen_temp(Type("<boolean>"));
+		SS->c = n.c +
+				"\t" + SS->v + " = " + index_pipe.v + " >= " + n.v + ";\n" +
+				"\tif( " + SS->v + " ) goto " + stepPipe + ";\n";
+	}
+	else
+		err("The parameter of first N must be <integer> type.");
+}
+
+void gen_code_pipe_lastN(Attribute* SS, Attribute n){
+	*SS = Attribute();
+	string temp1, temp_label;
+	if( n.t.name == "<integer>"){
+		temp1 = gen_temp(Type("<integer>"));
+		temp_label = new_label("last_n", label_counter);
+		SS->v = gen_temp(Type("<boolean>"));
+		SS->c = n.c +
+				"\t" + temp1 + " = " + end_pipe.v + " - " + begin_pipe.v + ";\n" +
+				"\t" + temp1 + " = " + temp1 + " - " + n.v + ";\n" +
+				"\t" + SS->v + " = " + index_pipe.v + " <= " + temp1 + ";\n" +
+				"\tif( " + SS->v + " ) goto " + stepPipe + ";\n";
+
+	}
+	else
+		err("The parameter of last N must be <integer> type.");
+}
+
 void gen_code_pipe_filter( Attribute* SS, const Attribute& condition ) {
   *SS = Attribute();
   SS->v = gen_temp( Type( "<boolean>" ) );
@@ -403,14 +454,15 @@ void gen_code_pipe_interval( Attribute* SS, Attribute begin, Attribute end, stri
 {
 	Attribute start, condition, step;
             
-    start.c = begin.c + end.c +
+    start.c = begin.c + end.c + begin_pipe.c + end_pipe.c +
                "\tx_" + type_names[pipeActive].name + " = " + begin.v + ";\n";
     condition.t.name = "<boolean>";
     condition.v = gen_temp( Type( "<boolean>" ) ); 
     condition.c = "\t" + condition.v + " = " + "x_" + type_names[pipeActive].name + 
-                 " <= " + end.v + ";\n";
-    step.c = "\t" + stepPipe + ":;\n" + 
-              "\tx_" + type_names[pipeActive].name + " = x_" + type_names[pipeActive].name + " + 1;\n";
+                 " <= " + end_pipe.v + ";\n";
+    step.c =  "\t" + stepPipe + ":;\n" + 
+              "\tx_" + type_names[pipeActive].name + " = x_" + type_names[pipeActive].name + " + 1;\n" +
+              "\t" + index_pipe.v + " = 1 + " + index_pipe.v + ";\n";
 
     string 	for_cond = new_label( "for_cond", label_counter),
     		end_for = new_label( "end_for", label_counter);
@@ -420,7 +472,8 @@ void gen_code_pipe_interval( Attribute* SS, Attribute begin, Attribute end, stri
     if( condition.t.name != "<boolean>")
     	err("The expression must be boolean.");
 
-    SS->c = start.c + "\t" + for_cond + ":;\n" + condition.c +
+    SS->c = index_pipe.c +
+    		start.c + "\t" + for_cond + ":;\n" + condition.c +
     		"\t" + valueNotCond + " = !" + condition.v + ";\n" +
     		"\tif( " + valueNotCond + " ) goto " + end_for + ";\n" +
     		cmds +
@@ -430,6 +483,9 @@ void gen_code_pipe_interval( Attribute* SS, Attribute begin, Attribute end, stri
 
 
     pipeActive = "";
+    begin_pipe = Attribute();
+    end_pipe = Attribute();
+    index_pipe = Attribute();
 }
 
 void gen_code_pipe( Attribute* SS, 
