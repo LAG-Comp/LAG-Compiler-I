@@ -50,7 +50,7 @@ void gen_code_main( Attribute* SS, const Attribute& cmds );
 void gen_code_una_ops( Attribute* SS, const Attribute& op, const Attribute& value);
 void gen_code_parameter( Attribute* SS, const Attribute var_type, const Attribute var_name);
 void gen_code_parameters( Attribute* SS, const Attribute param, const Attribute params);
-void gen_code_pipe( Attribute* SS, Attribute source, Attribute proc, Attribute consumer);
+void gen_code_pipe_array( Attribute* SS, Attribute id, Attribute proc, Attribute consumer);
 void gen_code_pipe_filter( Attribute* SS, const Attribute& condition );
 void gen_code_pipe_firstN(Attribute* SS, Attribute n);
 void gen_code_pipe_interval( Attribute* SS, Attribute begin, Attribute end, string cmds);
@@ -309,12 +309,37 @@ ATR : _ID '=' E
     ;
 
 PIPE : '[' LOAD_PIPE_ID '|' PIPE_PROCESSORS '|' PIPE_CONSUMER ']'
-	 { gen_code_pipe(&$$, $2, $4, $6); }
+	 { gen_code_pipe_array(&$$, $2, $4, $6); }
 	 | '[' _INTERVAL_FROM LOAD_PIPE _TO INIT_PIPE '|' PIPE_PROCESSORS '|' PIPE_CONSUMER ']'
 	 { gen_code_pipe_interval( &$$, $3, $5, $7.c + $9.c); }
      ;
 
 LOAD_PIPE_ID : _ID
+			 {
+			 	if( fetch_var_ST( *st, $1.v, &$1.t) || fetch_var_ST( global_st, $1.v, &$1.t) ){
+			 		if( $1.t.n_dim == 1 ){
+			 			$$ = $1;
+					  	begin_pipe = Attribute();
+					  	begin_pipe.v = gen_temp(Type("<integer>"));
+					  	index_pipe = Attribute();
+					  	index_pipe.v = gen_temp(Type("<integer>"));
+					  	index_pipe.c = "\t" + index_pipe.v + " = 0;\n";
+
+						end_pipe = Attribute();
+				  		end_pipe.v = gen_temp(Type("<integer>"));
+						pipeActive = $1.t.name;
+						insert_var_ST( *st, "x_"+type_names[pipeActive].name, pipeActive);
+						stepPipe = new_label( "step_pipe", label_counter);
+
+			 		}
+			 		else{
+			 			err("The variable is not a array.");
+			 		}
+			 	}
+			 	else{
+			 		err("variable not declared.");
+			 	}
+			 }
 			 ;
 
 LOAD_PIPE : E
@@ -322,7 +347,6 @@ LOAD_PIPE : E
 		  	$$ = $1;
 		  	begin_pipe = Attribute();
 		  	begin_pipe.v = gen_temp(Type("<integer>"));
-		  	begin_pipe.c = "\t" + begin_pipe.v + " = " + $1.v + ";\n";
 		  	index_pipe = Attribute();
 		  	index_pipe.v = gen_temp(Type("<integer>"));
 		  	index_pipe.c = "\t" + index_pipe.v + " = 0;\n"; 
@@ -333,7 +357,6 @@ INIT_PIPE : E
 			{ 	$$ = $1;
 				end_pipe = Attribute();
 		  		end_pipe.v = gen_temp(Type("<integer>"));
-		  		end_pipe.c = "\t" + end_pipe.v + " = " + $1.v + ";\n";
 				pipeActive = $1.t.name;
 				insert_var_ST( *st, "x_"+type_names[pipeActive].name, pipeActive);
 				stepPipe = new_label( "step_pipe", label_counter);
@@ -344,7 +367,7 @@ PIPE_CONSUMER : _FOR_EACH '(' COMMAND_TO_PIPE ')' { $$.c = $3.c; }
          	  | _SORT '(' SORT_PARAM ',' _ID ')'
         	  ;
 
-PIPE_PROCESSORS : PIPE_PROCESSORS '|' PIPE_PROCESSOR
+PIPE_PROCESSORS : PIPE_PROCESSORS '|' PIPE_PROCESSOR { $$.c = $1.c + "\n" + $3.c; }
           		| PIPE_PROCESSOR
           		;
 
@@ -415,10 +438,13 @@ map<string,string> c_op;
 void gen_code_pipe_firstN(Attribute* SS, Attribute n){
 	*SS = Attribute();
 	if( n.t.name == "<integer>"){
+		string temp1 = gen_temp(Type("<integer>"));
 		SS->v = gen_temp(Type("<boolean>"));
 		SS->c = n.c +
-				"\t" + SS->v + " = " + index_pipe.v + " >= " + n.v + ";\n" +
-				"\tif( " + SS->v + " ) goto " + stepPipe + ";\n";
+				"\t" + temp1 + " = " + begin_pipe.v + " + " + n.v + ";\n" +
+				"\t" + SS->v + " = " + index_pipe.v + " >= " + temp1 + ";\n" +
+				"\tif( " + SS->v + " ) goto " + stepPipe + ";\n" +
+				"\t" + end_pipe.v + " = " + temp1 + " - 1;\n";
 	}
 	else
 		err("The parameter of first N must be <integer> type.");
@@ -432,10 +458,10 @@ void gen_code_pipe_lastN(Attribute* SS, Attribute n){
 		temp_label = new_label("last_n", label_counter);
 		SS->v = gen_temp(Type("<boolean>"));
 		SS->c = n.c +
-				"\t" + temp1 + " = " + end_pipe.v + " - " + begin_pipe.v + ";\n" +
-				"\t" + temp1 + " = " + temp1 + " - " + n.v + ";\n" +
+				"\t" + temp1 + " = " + end_pipe.v + " - " + n.v + ";\n" +
 				"\t" + SS->v + " = " + index_pipe.v + " <= " + temp1 + ";\n" +
-				"\tif( " + SS->v + " ) goto " + stepPipe + ";\n";
+				"\tif( " + SS->v + " ) goto " + stepPipe + ";\n" +
+				"\t" + begin_pipe.v + " = " + temp1 + " + 1;\n" ;
 
 	}
 	else
@@ -454,12 +480,12 @@ void gen_code_pipe_interval( Attribute* SS, Attribute begin, Attribute end, stri
 {
 	Attribute start, condition, step;
             
-    start.c = begin.c + end.c + begin_pipe.c + end_pipe.c +
+    start.c = begin.c + end.c +
                "\tx_" + type_names[pipeActive].name + " = " + begin.v + ";\n";
     condition.t.name = "<boolean>";
     condition.v = gen_temp( Type( "<boolean>" ) ); 
     condition.c = "\t" + condition.v + " = " + "x_" + type_names[pipeActive].name + 
-                 " <= " + end_pipe.v + ";\n";
+                 " <= " + end.v + ";\n";
     step.c =  "\t" + stepPipe + ":;\n" + 
               "\tx_" + type_names[pipeActive].name + " = x_" + type_names[pipeActive].name + " + 1;\n" +
               "\t" + index_pipe.v + " = 1 + " + index_pipe.v + ";\n";
@@ -473,7 +499,10 @@ void gen_code_pipe_interval( Attribute* SS, Attribute begin, Attribute end, stri
     	err("The expression must be boolean.");
 
     SS->c = index_pipe.c +
-    		start.c + "\t" + for_cond + ":;\n" + condition.c +
+    		start.c + "\t" + for_cond + ":;\n" + 
+    		"\t" + begin_pipe.v + " = 0;\n" +
+    		"\t" + end_pipe.v + " = " + end.v + " - " + begin.v + ";\n" +
+    		condition.c +
     		"\t" + valueNotCond + " = !" + condition.v + ";\n" +
     		"\tif( " + valueNotCond + " ) goto " + end_for + ";\n" +
     		cmds +
@@ -488,20 +517,48 @@ void gen_code_pipe_interval( Attribute* SS, Attribute begin, Attribute end, stri
     index_pipe = Attribute();
 }
 
-void gen_code_pipe( Attribute* SS, 
-					Attribute source, 
+void gen_code_pipe_array( Attribute* SS, 
+					Attribute id, 
 					Attribute proc, 
 					Attribute consumer)
 {
+	Attribute start, condition, step;
+	string cmds = proc.c + "\n" + consumer.c;
+            
+    start.c = index_pipe.c;
+    condition.t.name = "<boolean>";
+    condition.v = gen_temp( Type( "<boolean>" ) ); 
+    condition.c = "\t" + condition.v + " = " + index_pipe.v + " <= " + toStr(id.t.d1) + ";\n";
 
-}
+    step.c =  "\t" + stepPipe + ":;\n" +
+              "\t" + index_pipe.v + " = 1 + " + index_pipe.v + ";\n";
 
-void gen_code_pipe_source_id( Attribute* SS, Attribute var){
-	pipeActive = var.t.name;
-	stepPipe = new_label( "pipe_active", label_counter);
-	insert_var_ST( *st, "x_"+type_names[pipeActive].name, Type(pipeActive));
-	SS->v = var.v;
-	SS->t = var.t;
+    string 	for_cond = new_label( "for_cond", label_counter),
+    		end_for = new_label( "end_for", label_counter);
+    string valueNotCond = gen_temp( Type("<boolean>"));
+
+    *SS = Attribute();
+    if( condition.t.name != "<boolean>")
+    	err("The expression must be boolean.");
+
+    SS->c = index_pipe.c +
+    		start.c + "\t" + for_cond + ":;\n" + 
+    		"\t" + begin_pipe.v + " = 0;\n" +
+    		"\t" + end_pipe.v + " = " + toStr(id.t.d1) + ";\n" +
+    		condition.c +
+    		"\t" + valueNotCond + " = !" + condition.v + ";\n" +
+    		"\tif( " + valueNotCond + " ) goto " + end_for + ";\n" +
+    		"\tx_" + type_names[pipeActive].name + " = " + id.v + "[" + index_pipe.v + "];\n" +
+    		cmds +
+    		step.c +
+    		"\tgoto " + for_cond + ";\n" +
+    		"\t" + end_for + ":;\n";
+
+
+    pipeActive = "";
+    begin_pipe = Attribute();
+    end_pipe = Attribute();
+    index_pipe = Attribute();
 }
 
 void gen_code_switch( Attribute* SS, Attribute& id, Attribute& switch_block ){
