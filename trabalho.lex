@@ -31,9 +31,6 @@ COMMENT  #[^#]*#
 "by"	 				{ yylval = Attribute( yytext ); return _BY;}
 
 
-"<reference>"           {  yylval = Attribute( yytext ); return _REFERENCE; }
-"<copy>"                {  yylval = Attribute( yytext ); return _COPY; }
-
 "Load:"                 {  yylval = Attribute( yytext ); return _LOAD; }
 "Input:"                {  yylval = Attribute( yytext ); return _INPUT; }
 "Output:"               {  yylval = Attribute( yytext ); return _OUTPUT; }

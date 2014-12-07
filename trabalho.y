@@ -45,6 +45,7 @@ void gen_code_parameter( Attribute* SS, const Attribute var_type, const Attribut
 void gen_code_parameters( Attribute* SS, const Attribute param, const Attribute params);
 void gen_code_print( Attribute* SS, const Attribute& cmds, const Attribute& expr );
 void gen_code_scan( Attribute* SS, const Attribute& var_type, const Attribute& var_name );
+void gen_code_switch( Attribute* SS, Attribute& id, Attribute& switch_block );
 void gen_code_while( Attribute* SS, const Attribute& expr, const Attribute& cmds );
 void gen_code_return_array( Attribute* SS, const Attribute& var, const Attribute& index);
 void gen_code_return_matrix( Attribute* SS, const Attribute& var, const Attribute& line,  const Attribute& column );
@@ -68,7 +69,6 @@ void yyerror(const char*);
 %token _INT _BOOL _DOUBLE _FLOAT _STRING _VOID
 %token _GLOBAL _ARRAY _MATRIX
 %token _OF_SIZE _BY
-%token _REFERENCE _COPY
 %token _LOAD _INPUT _OUTPUT
 %token _EXECUTE_FUNCTION _WITH
 %token _IF _EXECUTE _ELSE _ELSE_IF
@@ -201,11 +201,11 @@ INDEX_FOR : _ID
 		  { insert_var_ST( *st, $1.v, Type("<integer>") );}
 		  ;
 
-CMD_SWITCH : _CASE _ID SIWTCH_BLOCK 
+CMD_SWITCH : _CASE _ID SIWTCH_BLOCK { gen_code_switch(&$$, $2, $3); }
            ;
 
-SIWTCH_BLOCK : _CASE_EQUALS F ':' BLOCK SIWTCH_BLOCK 
-             | _CASE_NOT ':' BLOCK           
+SIWTCH_BLOCK : _CASE_EQUALS F ':' BLOCK SIWTCH_BLOCK { $$.label = $5.label; $$.label[$2.v] = $4.c; }
+             | _CASE_NOT ':' BLOCK  { $$.label["default"] = $3.c; }
              | { $$ = Attribute(); }
              ;
 
@@ -364,6 +364,39 @@ map<string,string> c_op;
 map<string,Type> type_names;
 
 #include "lex.yy.c"
+
+void gen_code_switch( Attribute* SS, Attribute& id, Attribute& switch_block ){
+
+	if( fetch_var_ST( *st, id.v, &id.t ) || fetch_var_ST( global_st, id.v, &id.t )){
+		string default_l = new_label( "default", label_counter);
+		string end_switch = new_label( "end_switch", label_counter);
+		string default_code = switch_block.label["default"];
+		switch_block.label.erase("default");
+		string temp = gen_temp(Type("<boolean>"));
+		string c, c_if, label_temp;
+		for(map<string,string>::iterator it = switch_block.label.begin(); it != switch_block.label.end(); ++it){
+			label_temp = new_label("case", label_counter);
+
+			c_if += "\t" + temp + " = " + id.v + " == " + it->first + ";\n" +
+					"\tif(" + temp + ") goto " + label_temp + ";\n";
+
+			c += "\t" + label_temp + ":;\n" +
+				it->second +
+				"\tgoto " + end_switch + ";\n";
+		}
+
+		SS->c = c_if + 
+				"\tgoto " + default_l + ";\n\n" + c +
+				"\t" + default_l + ":;\n" + default_code + "\n"
+				"\t" + end_switch + ":;\n";
+
+		switch_block.label.clear();
+
+	}
+	else{
+		err("Variable not dlecared: "+ id.v);
+	}
+}
 
 string gen_function_header(){
 	string c;

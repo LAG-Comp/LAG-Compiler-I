@@ -36,6 +36,7 @@ struct Attribute {
 	string v;  // Value
 	Type   t;  // type
 	string c;  // code
+	map<string,string> label;
 
 	Attribute() {}  // initialized with empty string
 	Attribute( string v, string t = "", string c = "" ) 

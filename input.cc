@@ -1,26 +1,19 @@
 
 Starting up...
 
-	Array <string> of size 4 a;
+	<integer> a;
+	
+	Scan <integer> to a;
 
-	<string> g;
-
-	a(2) = g;
-
-	Array <integer> of size 7 kjh;
-
-	<integer> lp;
-
-	lp = kjh(5);
-
-	Matrix <string> of size 4 by 4 b;
-
-	<string> h;
-
-	b(2,3) = h;
-
-	h = a(3);
-
-	h = b(2,3);
+	Case a 
+		equals 5: {
+			Print this "yes" this "\n";
+		}
+		equals 7:{
+			Print this "no" this "\n";
+		}
+		case not:{
+			Print this "maybe" this "\n";
+		}
 
 End of file
