@@ -328,7 +328,9 @@ LOAD_PIPE_ID : _ID
 						end_pipe = Attribute();
 				  		end_pipe.v = gen_temp(Type("<integer>"));
 						pipeActive = $1.t.name;
-						insert_var_ST( *st, "x_"+type_names[pipeActive].name, pipeActive);
+						Type tt = Type();
+						if( !fetch_var_ST( *st, "x_"+type_names[pipeActive].name, &tt) ) 
+							insert_var_ST( *st, "x_"+type_names[pipeActive].name, pipeActive);
 						stepPipe = new_label( "step_pipe", label_counter);
 
 			 		}
@@ -358,7 +360,9 @@ INIT_PIPE : E
 				end_pipe = Attribute();
 		  		end_pipe.v = gen_temp(Type("<integer>"));
 				pipeActive = $1.t.name;
-				insert_var_ST( *st, "x_"+type_names[pipeActive].name, pipeActive);
+				Type tt = Type();
+				if( !fetch_var_ST( *st, "x_"+type_names[pipeActive].name, &tt) )
+					insert_var_ST( *st, "x_"+type_names[pipeActive].name, pipeActive);
 				stepPipe = new_label( "step_pipe", label_counter);
 			}
       		;
