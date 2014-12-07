@@ -6,9 +6,13 @@ Starting up...
 		a(index) = index;
 	}
 
-	[ interval from 0 to 8 | last ( 5 ) | first ( 3 ) | for each ( Print this x this "\n"; ) ];
+	[ interval from 0 to 8 | last ( 5 ) | first ( 3 ) | for each ( If x is lesser than 5 execute{
+		Print this "uhuuuu\n";
+	} ) ];
 
-	[ interval from 3 to 15 | last ( 5 ) | first ( 3 ) | for each ( Print this x this "\n"; ) ];
+	
+
+	
 
 	
 

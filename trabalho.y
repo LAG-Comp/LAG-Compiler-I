@@ -316,6 +316,8 @@ PIPE : '[' LOAD_PIPE_ID '|' PIPE_PROCESSORS '|' PIPE_CONSUMER ']'
 
 LOAD_PIPE_ID : _ID
 			 {
+			 	if( pipeActive != "" )
+			 		err("There isn't pipe into pipe.");
 			 	if( fetch_var_ST( *st, $1.v, &$1.t) || fetch_var_ST( global_st, $1.v, &$1.t) ){
 			 		if( $1.t.n_dim == 1 ){
 			 			$$ = $1;
@@ -356,7 +358,10 @@ LOAD_PIPE : E
 		  ;
 
 INIT_PIPE : E 
-			{ 	$$ = $1;
+			{ 	
+				if( pipeActive != "" )
+			 		err("There isn't pipe into pipe.");
+				$$ = $1;
 				end_pipe = Attribute();
 		  		end_pipe.v = gen_temp(Type("<integer>"));
 				pipeActive = $1.t.name;
