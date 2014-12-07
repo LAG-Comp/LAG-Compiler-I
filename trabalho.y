@@ -214,18 +214,40 @@ CALL_FUNCTION : _EXECUTE_FUNCTION _ID _WITH '(' ARGUMENTS ')'
 			  		$$.c = $5.c + "\n\t" + $2.v + "(" + $5.v + ");\n";
 			  		$$.t = function_return[$2.v];
 			  	}
+			  	else{
+			  		err("Function not declared: "+$2.v);
+			  	}
 			  }
-              | _EXECUTE_FUNCTION _ID '(' ')' { $$.c = "\n\t" + $2.v + "();\n"; $$.t = function_return[$2.v]; }
+              | _EXECUTE_FUNCTION _ID '(' ')' 
+              { if( fetch_function_st($2.v, NULL) ){
+              		$$.c = "\n\t" + $2.v + "();\n"; 
+              		$$.t = function_return[$2.v];
+              	}
+			  	else{
+			  		err("Function not declared: "+$2.v);
+			  	}
+              }
               ;
 
 CALL_FUNCTION_RETURN : _EXECUTE_FUNCTION _ID _WITH '(' ARGUMENTS ')' 
-			  		 { if( fetch_function_st($2.v, NULL) ){
+			  		 {  if( fetch_function_st($2.v, NULL) ){
 			  		 		$$.c = $5.c;
 			  				$$.v = $2.v + "(" + $5.v + ")";
 			  				$$.t = function_return[$2.v];
 			  			}
+					  	else{
+					  		err("Function not declared: "+$2.v);
+					  	}
 			  		 }
-              		 | _EXECUTE_FUNCTION _ID '(' ')' { $$.v = $2.v + "()"; $$.t = function_return[$2.v]; }
+              		 | _EXECUTE_FUNCTION _ID '(' ')' 
+              		 {  if( fetch_function_st($2.v, NULL) ){
+              		 		$$.v = $2.v + "()"; 
+              		 		$$.t = function_return[$2.v]; 
+              		 	}
+					  	else{
+					  		err("Function not declared: "+$2.v);
+					  	}
+              		 }
                		 ;
 
 ARGUMENTS : E ',' ARGUMENTS { $$.v = $1.v + $2.v + $3.v; $$.c = $1.c + $3.c; }
@@ -544,7 +566,7 @@ void gen_code_if( Attribute *SS, const Attribute& expr, const Attribute& cmdsThe
   SS->c = expr.c + 
           "\t" + expr.v + "= !" + expr.v + ";\n" +
           "\tif( " + expr.v + " ) goto " + ifEnd + ";\n" +
-          "\t" + cmdsThen.c + "\n" +
+          cmdsThen.c + "\n" +
           "\t" + ifEnd + ":;\n";
 }
 
@@ -557,10 +579,10 @@ void gen_code_if_else( Attribute *SS, const Attribute& expr, const Attribute& cm
   SS->c = expr.c + 
           "\t" + expr.v + "= !" + expr.v + ";\n" +
           "\tif( " + expr.v + " ) goto " + ifEnd + ";\n" +
-          "\t" + cmdsThen.c + "\n" +
+          cmdsThen.c + "\n" +
           "\tgoto " + ifChainEnd + ";\n" +
           "\t" + ifEnd + ":;\n" + 
-          "\t" + cmdsElse.c + "\n" +
+          cmdsElse.c + "\n" +
           "\t" + ifChainEnd + ":;\n";  
 }
 

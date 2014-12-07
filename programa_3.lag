@@ -1,0 +1,56 @@
+Load: Discriminante !
+Input: <double_precision> a, <double_precision> b, <double_precision> c
+Output: <double_precision> d
+{
+	d = (b*b)-4.0*a*c;
+}
+
+Load: Raiz !
+Input: <integer> k, <integer> p
+Output: <double_precision> r
+{
+	r = k / 8.0;
+	For i from 0 to p execute
+	{
+		r = 0.5*( r + ( k*k / r ) );
+	}
+}
+
+Load: Programa_3 !
+Input:  <double_precision> a, <double_precision> b, <double_precision> c
+Output: <void>
+{
+	<double_precision> d;
+	<double_precision> r1;
+	<double_precision> r2;
+	d = Execute function Discriminante with ( a, b, c );
+	If d is equal to 0 execute
+	{
+		r1 = -b / (2.0*a);
+		Print this "Raiz unica: " this r1 this "\n";
+	}
+	Else
+	{
+		If d is greater than 0 execute
+		{
+			d = Execute function Raiz with ( d, 1000 );
+			r1 = (-b + d)/2*a;
+			r2 = (-b - d)/2*a;
+			Print this "Raizes reais: " this r1 this " " this r2 this "\n"; 
+		}
+		Else
+		{
+			d = -d;
+			d = Execute function Raiz with ( d, 1000 );
+			r1 = 2*a;
+			r2 = -b;
+			Print this "Raizes imaginárias! (1/" this r1 this ")*(" this r2 this "[+/-]i*" this d this ")\n";
+		}
+	}
+}
+
+Starting up...
+
+	Execute function Programa_3 with ( 2,3,4);
+
+End of file
