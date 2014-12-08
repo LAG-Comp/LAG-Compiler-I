@@ -25,6 +25,6 @@ Output: <void>
 
 Starting up...
 
-	Execute function Programa_4;
+	Execute function Programa_4();
 
 End of file
