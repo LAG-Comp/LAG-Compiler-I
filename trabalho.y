@@ -56,6 +56,7 @@ void gen_code_pipe_firstN(Attribute* SS, Attribute n);
 void gen_code_pipe_interval( Attribute* SS, Attribute begin, Attribute end, string cmds);
 void gen_code_pipe_lastN(Attribute* SS, Attribute n);
 void gen_code_pipe_source( Attribute* SS, Attribute var);
+void gen_code_pipe_sort( Attribute* SS, Attribute order, Attribute id);
 void gen_code_print( Attribute* SS, const Attribute& cmds, const Attribute& expr );
 void gen_code_scan( Attribute* SS, const Attribute& var_type, const Attribute& var_name );
 void gen_code_switch( Attribute* SS, Attribute& id, Attribute& switch_block );
@@ -94,7 +95,7 @@ void yyerror(const char*);
 %token _GT _LT _ET _DF _GE _LE _OR _AND _NOT
 %token _STARTING_UP _END_OF_FILE 
 %token _CRESCENT _DECRESCENT
-%token _CRITERION _MERGE _SPLIT
+%token _CRITERION _SPLIT
 
 %left _OR
 %left _AND
@@ -374,6 +375,9 @@ INIT_PIPE : E
 
 PIPE_CONSUMER : _FOR_EACH '(' COMMAND_TO_PIPE ')' { $$.c = $3.c; }
          	  | _SORT '(' SORT_PARAM ',' _ID ')'
+         	  { gen_code_pipe_sort( &$$, $3, $5); }
+ //       	  | _SPLIT _ID _TO _ID _CRITERION E 
+ //       	  	{ gen_code_pipe_split( &$$, $2, $4, $6); }
         	  ;
 
 PIPE_PROCESSORS : PIPE_PROCESSORS '|' PIPE_PROCESSOR { $$.c = $1.c + "\n" + $3.c; }
@@ -443,6 +447,82 @@ map<string,Type> operation_results;
 map<string,string> c_op;
 
 #include "lex.yy.c"
+
+void gen_code_pipe_split( Attribute* SS, Attribute id_1, Attribute id_2, Attribute expr){
+	if( (fetch_var_ST( *st, id_1.v, &id_1.t) || fetch_var_ST( global_st, id_1.v, &id_1.t) ) 
+		&&(fetch_var_ST( *st, id_2.v, &id_2.t) || fetch_var_ST( global_st, id_2.v, &id_2.t)) 
+		&& expr.t.name == "<boolean>"){
+		if( id_1.t.n_dim == 1 && id_2.t.n_dim == 1){
+			string label_split = new_label( "pipe_split", label_counter );
+			SS->c = expr.c +
+					"\tif( " + expr.v + " ) goto " + label_split + ";\n" +
+					"\t" + id_1.v + "[" + "];\n" +
+					"\t" + label_split + ":;\n" +
+					"\t" + id_2.v + "[" + "];\n";
+		}
+		else{
+			err("The variable passed are not array types.");
+		}
+
+	}
+	else{
+		err("Wrong values to split. try others.");
+	}
+}
+
+void gen_code_pipe_sort( Attribute* SS, Attribute order, Attribute id){
+	if( fetch_var_ST( *st, id.v, &id.t) || fetch_var_ST( global_st, id.v, &id.t) ){
+		if( id.t.n_dim == 1 && id.t.name == pipeActive && pipeActive == "<integer>"){
+			string ord;
+			if( order.v == "increasing" )
+				ord = " < ";
+			else{
+				ord = " > ";
+			}
+			string temp1_int = gen_temp(Type("<integer>"));
+			string temp2_int = gen_temp(Type("<integer>"));
+			string temp3_int = gen_temp(Type("<integer>"));
+			string temp1_bool = gen_temp(Type("<boolean>"));
+			string label_sort = new_label("pipe_sort_couter",label_counter);
+			string label_sort_test = new_label("pipe_sort_test",label_counter);
+			string label_sort_test2 = new_label("pipe_sort_test",label_counter);
+			string label_sort_end = new_label("pipe_sort_end",label_counter);
+			SS->c = "\t" + temp1_int + " = 0;\n" +
+					"\t" + temp3_int + " = x_" + type_names[pipeActive].name + ";\n" +
+					"\t" + temp1_bool + " = !" + index_pipe.v + ";\n" +
+					"\tif( " + temp1_bool + " ) goto " + label_sort_test2 + ";\n" +
+					"\t" + label_sort + ":;\n" +
+
+					"\t" + temp1_bool + " = " + temp1_int + " == " + index_pipe.v + ";\n" +
+					"\tif( " + temp1_bool + " ) goto " + label_sort_test2 + ";\n" +
+
+					"\t" + temp1_bool + " = " + temp1_int + " < " + index_pipe.v + ";\n" +
+					"\t" + temp1_bool + " = !" + temp1_bool + ";\n" +
+					"\tif( " + temp1_bool + " ) goto " + label_sort_end + ";\n" +
+
+					"\t" + temp2_int + " = " + id.v + "[" + temp1_int + "];\n" +
+
+					"\t" + temp1_bool + " = " + temp2_int + ord + temp3_int + ";\n" +
+
+					"\tif( " + temp1_bool + " ) goto " + label_sort_test + ";\n" +
+					"\t" + id.v + "[" + temp1_int + "] = " + temp3_int + ";\n" +
+					"\t" + temp3_int + " = " + temp2_int + ";\n" +
+					"\t" + label_sort_test + ":;\n" +
+
+					"\t" + temp1_int + " = " + temp1_int + " + 1;\n" +
+					"\tgoto " + label_sort + ";\n" +
+					"\t" + label_sort_test2 + ":;\n" +
+					"\t" + id.v + "[" + temp1_int + "] = " + temp3_int + ";\n" +
+					"\t" + label_sort_end + ":;\n" ;
+		}
+		else{
+			err("The variable is not valid to this operation.");
+		}
+	}
+	else{
+		err("Variable not declared.");
+	}
+}
 
 void gen_code_pipe_firstN(Attribute* SS, Attribute n){
 	*SS = Attribute();

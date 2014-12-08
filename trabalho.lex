@@ -82,7 +82,6 @@ COMMENT  #[^#]*#
 "not"                  	   	{  yylval = Attribute( yytext ); return _NOT; }
 
 "using criterion"    		{ yylval = Attribute( yytext ); return _CRITERION; }
-"merge"    					{ yylval = Attribute( yytext ); return _MERGE; }
 "split"    					{ yylval = Attribute( yytext ); return _SPLIT; }
 
 "increasing"    		{ yylval = Attribute( yytext ); return _CRESCENT; }
