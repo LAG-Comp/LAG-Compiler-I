@@ -57,6 +57,7 @@ void gen_code_pipe_interval( Attribute* SS, Attribute begin, Attribute end, stri
 void gen_code_pipe_lastN(Attribute* SS, Attribute n);
 void gen_code_pipe_source( Attribute* SS, Attribute var);
 void gen_code_pipe_sort( Attribute* SS, Attribute order, Attribute id);
+void gen_code_pipe_split( Attribute* SS, Attribute id_1, Attribute id_2, Attribute expr);
 void gen_code_print( Attribute* SS, const Attribute& cmds, const Attribute& expr );
 void gen_code_scan( Attribute* SS, const Attribute& var_type, const Attribute& var_name );
 void gen_code_switch( Attribute* SS, Attribute& id, Attribute& switch_block );
@@ -376,8 +377,8 @@ INIT_PIPE : E
 PIPE_CONSUMER : _FOR_EACH '(' COMMAND_TO_PIPE ')' { $$.c = $3.c; }
          	  | _SORT '(' SORT_PARAM ',' _ID ')'
          	  { gen_code_pipe_sort( &$$, $3, $5); }
- //       	  | _SPLIT _ID _TO _ID _CRITERION E 
- //       	  	{ gen_code_pipe_split( &$$, $2, $4, $6); }
+	       	  | _SPLIT _ID _TO _ID _CRITERION E 
+                  { gen_code_pipe_split( &$$, $2, $4, $6); }
         	  ;
 
 PIPE_PROCESSORS : PIPE_PROCESSORS '|' PIPE_PROCESSOR { $$.c = $1.c + "\n" + $3.c; }
@@ -453,12 +454,27 @@ void gen_code_pipe_split( Attribute* SS, Attribute id_1, Attribute id_2, Attribu
 		&&(fetch_var_ST( *st, id_2.v, &id_2.t) || fetch_var_ST( global_st, id_2.v, &id_2.t)) 
 		&& expr.t.name == "<boolean>"){
 		if( id_1.t.n_dim == 1 && id_2.t.n_dim == 1){
+			string temp_bool = gen_temp( Type("<boolean>"));
+			string temp_1 = gen_temp( Type("<integer>"));
+			string temp_counter1 = gen_temp( Type("<integer>"));
+			string temp_counter2 = gen_temp( Type("<integer>"));
 			string label_split = new_label( "pipe_split", label_counter );
+			string label_split2 = new_label( "pipe_split_init", label_counter );
+			string label_split3 = new_label( "pipe_split_end", label_counter );
 			SS->c = expr.c +
+					"\t" + temp_1 + " = " + index_pipe.v + " - " + begin_pipe.v + ";\n" +
+					"\tif( " + temp_1 + ") goto " + label_split2 + ";\n" +
+					"\t" + temp_counter1 + " = 0;\n" +
+					"\t" + temp_counter2 + " = 0;\n" +
+					"\t" + label_split2 + ":;\n" +
 					"\tif( " + expr.v + " ) goto " + label_split + ";\n" +
-					"\t" + id_1.v + "[" + "];\n" +
+					"\t" + id_2.v + "[" + temp_counter1 + "] = x_" + type_names[pipeActive].name + ";\n" +
+					"\t" + temp_counter1 + " = " + temp_counter1 + " + 1;\n"+
+					"\tgoto " + label_split3 + ";\n" + 
 					"\t" + label_split + ":;\n" +
-					"\t" + id_2.v + "[" + "];\n";
+					"\t" + id_1.v + "[" + temp_counter2 + "] = x_" + type_names[pipeActive].name + ";\n" +
+					"\t" + temp_counter2 + " = " + temp_counter2 + " + 1;\n"+
+					"\t" + label_split3 + ":;\n" ;
 		}
 		else{
 			err("The variable passed are not array types.");
