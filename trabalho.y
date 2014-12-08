@@ -577,7 +577,7 @@ void gen_code_pipe_filter( Attribute* SS, const Attribute& condition ) {
   *SS = Attribute();
   SS->v = gen_temp( Type( "<boolean>" ) );
   SS->c = condition.c + 
-          "\t" + SS->v + " = !" + condition.v + ";\n" +
+          "\t" + SS->v + " = ! " + condition.v + ";\n" +
           "\tif( " + SS->v + " ) goto " + stepPipe + ";\n";
 }
 
